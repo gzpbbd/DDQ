@@ -1,3 +1,4 @@
+#encoding:utf-8
 """
 Created on May 20, 2016
 
@@ -49,10 +50,12 @@ class StateTracker:
         self.history_dictionaries = []
         self.turn_count = 0
         self.current_slots = {}
-        
+
+        # 记录了所有 user 与 agent inform 过的 slot， 用于后面查询 database 作为查找的限制条件
         self.current_slots['inform_slots'] = {}
+
         self.current_slots['request_slots'] = {}
-        self.current_slots['proposed_slots'] = {}
+        self.current_slots['proposed_slots'] = {} # 记录了所有agent inform过的slot，似乎无实际作用，只用于debug
         self.current_slots['agent_request_slots'] = {}
 
 
@@ -78,16 +81,26 @@ class StateTracker:
         
 
     def get_state_for_agent(self):
+        '''
+        :return: {last user_action, current_slots, kb_results_dict, turn_count,
+        history_dictionaries, last agent_action}
+        '''
         """ Get the state representatons to send to agent """
         #state = {'user_action': self.history_dictionaries[-1], 'current_slots': self.current_slots, 'kb_results': self.kb_results_for_state()}
-        state = {'user_action': self.history_dictionaries[-1], 'current_slots': self.current_slots, #'kb_results': self.kb_results_for_state(), 
+        # kb_results_dict没作用
+        state = {'user_action': self.history_dictionaries[-1], 'current_slots': self.current_slots, #'kb_results': self.kb_results_for_state(),
                  'kb_results_dict':self.kb_helper.database_results_for_agent(self.current_slots), 'turn': self.turn_count, 'history': self.history_dictionaries, 
                  'agent_action': self.history_dictionaries[-2] if len(self.history_dictionaries) > 1 else None}
         return copy.deepcopy(state)
 
     def get_state_for_user(self):
+        '''
+        :return: {last user_action, current_slots, kb_results_dict, turn_count,
+        history_dictionaries, last agent_action}
+        '''
         """ Get the state representatons to send to user """
         #state = {'user_action': self.history_dictionaries[-1], 'current_slots': self.current_slots, 'kb_results': self.kb_results_for_state()}
+        # kb_results_dict没作用
         state = {'user_action': self.history_dictionaries[-2], 'current_slots': self.current_slots, #'kb_results': self.kb_results_for_state(),
                  'kb_results_dict':self.kb_helper.database_results_for_agent(self.current_slots), 'turn': self.turn_count, 'history': self.history_dictionaries,
                  'agent_action': self.history_dictionaries[-1] if len(self.history_dictionaries) > 1 else None}
@@ -109,6 +122,23 @@ class StateTracker:
     
     
     def update(self, agent_action=None, user_action=None):
+        '''
+        更新 self.current_slots, self.turn_count, self.history_dictionaries
+        更新 agent_action['inform_slots'] 的值
+
+        关于self.current_slots各内容的更新：
+            request_slots：使用user_action的request_slots进行更新。如果slot在inform_slots中出现过，则会被删除
+            agent_request_slots：使用agent_action的request_slots进行更新
+            inform_slots：使用user_action、agent_action两者的inform_slots进行更新
+            proposed_slots：记录了agent_action中出现过的所有inform_slots。可用于判断inform_slots中的slot分别是由谁(
+            agent/user)填入的
+
+        如果是agent_action，则先查询database，填充好agent_action['inform_slots']中slot对应的值，再更新DST。
+
+        :param agent_action: 系统的动作。
+        :param user_action:
+        :return:
+        '''
         """ Update the state based on the latest action """
 
         ########################################################################

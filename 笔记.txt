@@ -1,0 +1,216 @@
+dialog_manager - DialogManager (dialog_system/dialog_manager.py)
+
+train时：
+    user_sim - RuleSimulator (usersims/usersim_rule.py)
+    world_model - ModelBasedSimulator (usersims/usersim_model.py)
+    agent - AgentDQN (agents/agent_dqn.py)
+
+    warm_start_simulation() 中 user_environment=True，warm_start=1
+
+dia_acts.txt 11个action
+slot_set.txt 29个slot
+dia_act_nl_pairs.v6.json 6个action
+
+StateTracker 中 :
+    history_dictionaries 保存每轮信息的字典
+    history_vectors 初始化时添加了一行全零向量，之后对用户动作添加全零向量，对agent动作添加全1向量，好像并没有被使用
+
+agent_dqn.py中的AgentDQN有两种policy:
+    replay pool未满时使用rule_policy策略。依次询问规定的槽位 -> taskcomplate -> thanks
+    repaly pool满时使用DQN_policy，用DQN预测动作
+
+
+DST、DialogManager、Agent中的movie_dictionary是movie_kb，为每个电影对应的字典
+而Simulator中的movie_dictionary是movie_dictionary，为每个slot可填的候选value
+
+nlg模块包括rule nl与 model nl。
+    先使用rule nl匹配template库。如果没有对应的template，就使用model nl。
+    model nl输出的也是template，需要用dia_act['inform_slot']中的value填充
+
+agent 产生 action 后，在 DST.update 时，会利用数据库中的数据，更新当前 agent action 的 inform_slots 的值
+
+当 agent_action['diaact'] = 'thanks' 时，usersim_rule 检查 goal，再设置 self.dialog_status = SUCCESS_DIALOG
+
+DialogManager.next_turn 流程：
+    state for agent -> agent action -> DST update (fill agent action -> update) -> state for user
+    -> user action, episode_over, dialog_status, reward -> DST update -> add experience to
+    replay_pool
+
+DST 的 update，即在 NLU 之后 update 一次，又在 PL 产生 system action 后更新一次
+
+next_turn(record_training_data) and not agent.predict_mode 时才为 agent 保存训练用的对话数据
+next_turn(record_training_data_for_user) and and not user_world_model 时才为 world model 保存训练用的对话数据
+world model 有两个参数:
+    predict_model 始终为 True。在 __init__ 中定义
+    predict_mode 无任何作用。在 run.py 中赋值。
+    这应该是程序写错了。
+
+agent 有两个 replay_pool（replay_pool 与 replay_pool_from_model）。训练 agent 时好像并无差别。
+
+agent 每轮只产生一个动作（DQN predict时最后一层为 argmax）。候选动作为 dialog_config.feasible_actions 列表。每个 inform 或
+requests 型动作都只有一个 slot
+
+
+判断对话是否为 SUCCESS：
+    1. 对于 RuleSimulator
+
+        dialog_status 是由 user 在 next 函数中设置的，如下情况会设置 dialog_status = dialog_config.SUCCESS_DIALOG：
+            当 sys_act == "thanks"，进行检查：当预定了电影票，且预定的电影票的电影票的所有 slot value 与 user goal 中 inform slot的value相同时
+
+            user 有一个 self.state['history_slots']，应该是保存所有出现过的 agent_action['inform_slots']，
+            然后用这个与 user goal 中的 inform slots 进行对比。
+
+        episode_over 信号都是由 user 设置的，如下几种情况会设置 episode_over = True：
+            user._sample_action()中采样到的行为为 'thanks' or 'closing'
+            当 sys_act == "closing"
+            当 sys_act == "thanks"
+            当user检查到 self.state['turn'] > self.max_turn
+
+    2. 对于 ModelBasedSimulator，reward 与 episode_over 都是model预测的，不需要判断对话是否success
+
+
+
+
+使用 RuleSimulator 时，根据 dialog_status 计算 reward。
+
+对于 system 的 rule_policy：
+    action 为先依次 request 几个固定的的槽位（self.request_set），然后inform taskcomplete、thanks
+对于 system 的 DQN_policy，就是直接使用 model 预测
+
+
+在 DST.update() 中，对于 agent_action，会有一次 fill_inform_slots 的操作。该操作有如下作用：
+        以所有 agent 与 user inform 过的 slot-value 作为限制条件，查询数据库，将查询结果填入 agent_action 的 inform_slots 中。
+            1. 如果 agent.action == 'taskcomplete'，则将所有 agent 与 user inform 过的 slot-value 填入
+            agent_action 的 inform_slots 中。
+            2. 否则，更新 agent_action 的 inform_slots 中已有的 slot
+
+----------------------------------
+---- user.sample_goal:
+{
+    "request_slots": {
+        "date": "UNK",
+        "ticket": "UNK",
+        "theater": "UNK",
+        "starttime": "UNK"
+    },
+    "diaact": "request",
+    "inform_slots": {
+        "numberofpeople": "5",
+        "moviename": "avengers"
+    }
+}
+---- user_action: history、更新DST使用的是request_slots、inform_slots、diaact
+{
+    "request_slots": {
+        "starttime": "UNK"
+    },
+    "turn": 0,
+    "nl": "What is the start time for avengers?",
+    "diaact": "request",
+    "inform_slots": {
+        "moviename": "avengers"
+    }
+}
+
+-----------------------------------
+---- agent state 编码为 one-hot 或者 bag 模型。对于slot-value只编码了slot，没有编码value。带 / 的是指被编码为tensor的数据
+{
+    "agent_action": {
+        "request_slots": { /
+            "theater": "UNK"
+        },
+        "turn": 9,
+        "speaker": "agent",
+        "inform_slots": {}, /
+        "diaact": "request" /
+    },
+    "user_action": {
+        "request_slots": {}, /
+        "turn": 10,
+        "speaker": "user",
+        "inform_slots": { /
+            "theater": "southpoint casino"
+        },
+        "diaact": "inform" /
+    },
+    "turn": 11, /
+    "current_slots": {
+        "request_slots": {
+            "date": "UNK",
+            "starttime": "UNK"
+        },
+        "agent_request_slots": {
+            "date": "UNK",
+            "city": "UNK",
+            "moviename": "UNK",
+            "theater": "UNK",
+            "starttime": "UNK"
+        },
+        "inform_slots": { /
+            "city": "las vegas",
+            "moviename": "the other side of the door",
+            "theater": "southpoint casino"
+        },
+        "proposed_slots": {}
+    },
+    "kb_results_dict": {
+        "matching_all_constraints": 0,
+        "city": 0,
+        "moviename": 0,
+        "theater": 0
+    },
+    "history": [
+        {
+            "request_slots": {
+                "starttime": "UNK"
+            },
+            "turn": 0,
+            "speaker": "user",
+            "inform_slots": {
+                "city": "las vegas",
+                "moviename": "the other side of the door"
+            },
+            "diaact": "request"
+        },
+        {
+            "request_slots": {
+                "moviename": "UNK"
+            },
+            "turn": 1,
+            "speaker": "agent",
+            "inform_slots": {},
+            "diaact": "request"
+        },
+        ....
+    }
+}
+
+---- agent_action
+{
+    "act_slot_response": {
+        "request_slots": {},
+        "diaact": "inform",
+        "inform_slots": {
+            "taskcomplete": "PLACEHOLDER"
+        }
+    },
+    "act_slot_value_response": null
+}
+---- agent_action
+{
+    "act_slot_response": {
+        "request_slots": {
+            "moviename": "UNK"
+        },
+        "diaact": "request",
+        "inform_slots": {}
+    },
+    "act_slot_value_response": null
+}
+
+user: _sample_goal ? _sample_action ?
+
+# read DialogManager.next_turn  -> self.agent.add_nl_to_action(self.agent_action) -> self.nlg_model.convert_diaact_to_nl
+
+
+usersim_rule.py self.corrupt(self.state)

@@ -1,3 +1,4 @@
+#encoding:utf-8
 """
 Created on May 18, 2016
 
@@ -15,11 +16,23 @@ class KBHelper:
         """ Constructor for a KBHelper """
         
         self.movie_dictionary = movie_dictionary
+        # cached_kb 用于缓存查询结果，从而加快查询速度。查询的键是DST.current_slots中inform_slots的slot-value对组成的元组。
+        # defaultdict 是带有默认值的dict
         self.cached_kb = defaultdict(list)
         self.cached_kb_slot = defaultdict(list)
 
 
     def fill_inform_slots(self, inform_slots_to_be_filled, current_slots):
+        """
+        以current_slots['inform_slots']作为限制条件，查询数据库，将值填入inform_slots_to_be_filled中
+        如果是 taskcomplete，则将 current_slots 中所有 inform_slots 填入 inform_slots_to_be_filled 中。
+        否则，更新 inform_slots_to_be_filled 中已有的 slot
+
+        :param inform_slots_to_be_filled: slot-value构成的字典。value等待被填入。
+                调用时传入的是agent_action['inform_slots']
+        :param current_slots: DST保存的当前对话状态
+        :return: 填充过后的inform_slots_to_be_filled
+        """
         """ Takes unfilled inform slots and current_slots, returns dictionary of filled informed slots (with values)
 
         Arguments:
@@ -55,6 +68,7 @@ class KBHelper:
             ####################################################################
             #   Grab the value for the slot with the highest count and fill it
             ####################################################################
+            # 用在kb_results中出现次数最多的值填充slot
             values_dict = self.available_slot_values(slot, kb_results)
 
             values_counts = [(v, values_dict[v]) for v in values_dict.keys()]
@@ -67,6 +81,12 @@ class KBHelper:
 
 
     def available_slot_values(self, slot, kb_results):
+        '''
+        统计slot在kb_results中的出现情况
+        :param slot:
+        :param kb_results: 数据库查询得到的符合限制条件的各电影院信息
+        :return: 一个字典。字典的key为kb_results中所有可能的slot的value.字典的值为出现各value在kb_results中出现的次数
+        '''
         """ Return the set of values available for the slot based on the current constraints """
         
         slot_values = {}
@@ -79,6 +99,11 @@ class KBHelper:
         return slot_values
 
     def available_results_from_kb(self, current_slots):
+        '''
+        以current_slots中必要的slot-value信息作为限制条件，查询movie数据库中符合条件的电影院，返回查询结果
+        :param current_slots: DST保存的当前状态
+        :return: 字典形式的查询结果。key为编号。value为电影院信息。
+        '''
         """ Return the available movies in the movie_kb based on the current constraints """
         
         ret_result = []
@@ -94,6 +119,7 @@ class KBHelper:
         query_idx_keys = frozenset(current_slots.items())
         cached_kb_ret = self.cached_kb[query_idx_keys]
 
+        # 如果之前查询过，直接返回查询结果
         cached_kb_length = len(cached_kb_ret) if cached_kb_ret != None else -1
         if cached_kb_length > 0:
             return dict(cached_kb_ret)
@@ -134,6 +160,11 @@ class KBHelper:
         return ret_result
     
     def available_results_from_kb_for_slots(self, inform_slots):
+        '''
+        怎么是把所有slot的key计数为0
+        :param inform_slots: 用户inform给agent的slots
+        :return:
+        '''
         """ Return the count statistics for each constraint in inform_slots """
         
         kb_results = {key:0 for key in inform_slots.keys()}

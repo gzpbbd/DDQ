@@ -1,3 +1,4 @@
+#encoding:utf-8
 """
 Created on May 17, 2016
 
@@ -80,6 +81,11 @@ class Agent:
      
        
     def add_nl_to_action(self, agent_action):
+        """
+        NLG部件根据 action 生成 nl，填入agent_action['act_slot_response']['nl']
+        :param agent_action:
+        :return:
+        """
         """ Add NL to Agent Dia_Act """
         
         if agent_action['act_slot_response']:

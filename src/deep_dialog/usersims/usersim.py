@@ -1,3 +1,4 @@
+#encoding:utf-8
 """
 Created on June 7, 2016
 
@@ -45,6 +46,12 @@ class UserSimulator:
         self.nlu_model = nlu_model
 
     def add_nl_to_action(self, user_action):
+        """
+        将 user action 变为 nl，作为 user_action['nl']
+
+        :param user_action:
+        :return:
+        """
         """ Add NL to User Dia_Act """
 
         user_nlg_sentence = self.nlg_model.convert_diaact_to_nl(user_action, 'usr')

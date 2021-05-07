@@ -1,3 +1,4 @@
+#encoding:utf-8
 from .usersim import UserSimulator
 import argparse, json, random, copy, sys
 import numpy as np
@@ -16,6 +17,13 @@ class ModelBasedSimulator(UserSimulator):
     """ A rule-based user simulator for testing dialog policy """
 
     def __init__(self, movie_dict=None, act_set=None, slot_set=None, start_set=None, params=None):
+        '''
+        :param movie_dict: 字典。电影领域每个slot的候选value
+        :param act_set: 可选的act集合
+        :param slot_set: 可选的slot集合
+        :param start_set: 第一轮的goal集合
+        :param params: 配置参数
+        '''
         """ Constructor shared by all user simulators """
 
         self.movie_dict = movie_dict
@@ -49,6 +57,7 @@ class ModelBasedSimulator(UserSimulator):
 
         self.predict_model = True
 
+        # SimulatorModel 模型结构对应了论文 world model 的描述
         self.model = SimulatorModel(self.num_actions, self.hidden_size, self.state_dimension, self.num_actions_user, 1)
         self.optimizer = optim.RMSprop(self.model.parameters(), lr=0.001)
 
@@ -158,7 +167,8 @@ class ModelBasedSimulator(UserSimulator):
     def train(self, batch_size=1, num_batches=1):
         """
         Train the world model with all the accumulated examples
-        :param batch_size: self-explained
+
+        :param batch_size: epoch_number
         :param num_batches: self-explained
         :return: None
         """
@@ -298,6 +308,17 @@ class ModelBasedSimulator(UserSimulator):
         return None
 
     def register_experience_replay_tuple(self, s_t, agent_a_t, s_tplus1, reward, term, user_a_t):
+        """
+        将当前轮的数据转为数字表示存入 replay_pool 中
+
+        :param s_t:
+        :param agent_a_t:
+        :param s_tplus1:
+        :param reward:
+        :param term:
+        :param user_a_t:
+        :return:
+        """
         """ Register feedback from the environment, to be stored as future training data for world model"""
 
         state_t_rep = self.prepare_state_representation(s_t)

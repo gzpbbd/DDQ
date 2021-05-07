@@ -52,7 +52,7 @@ def main(params):
     cmd = params['cmd']
     
     if cmd == 0:
-        numbers = load_performance_file(params['result_file'])
+        numbers =  (params['result_file'])
         draw_learning_curve(numbers)
     elif cmd == 1:
         read_performance_records(params['result_file'])

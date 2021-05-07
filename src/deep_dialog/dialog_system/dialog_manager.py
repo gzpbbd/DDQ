@@ -1,3 +1,4 @@
+# encoding:utf-8
 """
 Created on May 17, 2016
 
@@ -24,11 +25,20 @@ class DialogManager:
         self.reward = 0
         self.episode_over = False
 
-
-        self.use_world_model = False
+        self.use_world_model = False  # 是否使用了 world model
         self.running_user = self.user
 
     def initialize_episode(self, use_environment=False):
+        '''
+        初始化DST, agent, user。user 采样 goal，生成第一个 user_action。DST update
+
+
+        :param use_environment: weather to use user as environment.
+                True: use user as environment
+                False: use world model as environment
+
+        :return:
+        '''
         """ Refresh state for new dialog """
 
         self.reward = 0
@@ -45,14 +55,18 @@ class DialogManager:
             self.running_user = self.user
             self.use_world_model = False
 
-        self.user_action = self.running_user.initialize_episode()
+        self.user_action = self.running_user.initialize_episode()  # 第一个用户动作
 
         if use_environment:
             self.world_model.sample_goal = self.user.sample_goal
 
+        # print('---- user.sample_goal:')
+        # print(json.dumps(self.user.sample_goal, indent=4))
+        # print('---- user_action:')
+        # print(json.dumps(self.user_action, indent=4))
         self.state_tracker.update(user_action=self.user_action)
 
-        if dialog_config.run_mode < 3:
+        if dialog_config.run_mode < 3:  # 调试模式
             print ("New episode, user goal:")
             print json.dumps(self.user.goal, indent=2)
         self.print_function(user_action=self.user_action)
@@ -60,17 +74,27 @@ class DialogManager:
         self.agent.initialize_episode()
 
     def next_turn(self, record_training_data=True, record_training_data_for_user=True):
+        """
+        流程：
+            state for agent -> agent action -> DST update (fill agent action -> update) -> state for user
+            -> user action, episode_over, dialog_status, reward -> DST update -> add experience to
+            replay_pool
+
+        :param record_training_data: 是否为 system agent 保存训练数据
+        :param record_training_data_for_user: 是否为 world model 保存训练数据
+        :return:
+            episode_over: 对话是否结束。
+            reward: 当前 turn 的奖励。
+        """
         """ This function initiates each subsequent exchange between agent and user (agent first) """
 
-        ########################################################################
         #   CALL AGENT TO TAKE HER TURN
-        ########################################################################
         self.state = self.state_tracker.get_state_for_agent()
         self.agent_action = self.agent.state_to_action(self.state)
 
-        ########################################################################
+        # print('---- agent_action \n{}'.format(json.dumps(self.agent_action, indent=4)))
+
         #   Register AGENT action with the state_tracker
-        ########################################################################
         self.state_tracker.update(agent_action=self.agent_action)
 
         self.state_user = self.state_tracker.get_state_for_user()
@@ -78,47 +102,47 @@ class DialogManager:
         self.agent.add_nl_to_action(self.agent_action)  # add NL to Agent Dia_Act
         self.print_function(agent_action=self.agent_action['act_slot_response'])
 
-        ########################################################################
         #   CALL USER TO TAKE HER TURN
-        ########################################################################
         self.sys_action = self.state_tracker.dialog_history_dictionaries()[-1]
         if self.use_world_model:
-            self.user_action, self.episode_over, self.reward = self.running_user.next(self.state_user,
-                                                                                      self.agent.action)
+            self.user_action, self.episode_over, self.reward = self.running_user.next(
+                self.state_user,
+                self.agent.action)
         else:
-            self.user_action, self.episode_over, dialog_status = self.running_user.next(self.sys_action)
+            self.user_action, self.episode_over, dialog_status = self.running_user.next(
+                self.sys_action)
             self.reward = self.reward_function(dialog_status)
 
-        ########################################################################
         #   Update state tracker with latest user action
-        ########################################################################
         if self.episode_over != True:
             self.state_tracker.update(user_action=self.user_action)
             self.print_function(user_action=self.user_action)
 
         self.state_user_next = self.state_tracker.get_state_for_agent()
 
-        ########################################################################
         #  Inform agent of the outcome for this timestep (s_t, a_t, r, s_{t+1}, episode_over, s_t_u, user_world_model)
-        ########################################################################
         if record_training_data:
             self.agent.register_experience_replay_tuple(self.state, self.agent_action, self.reward,
-                                                        self.state_tracker.get_state_for_agent(), self.episode_over,
+                                                        self.state_tracker.get_state_for_agent(),
+                                                        self.episode_over,
                                                         self.state_user, self.use_world_model)
 
-        ########################################################################
-        #  Inform world model of the outcome for this timestep
-        # (s_t, a_t, s_{t+1}, r, t, ua_t)
-        ########################################################################
-
+        #  Inform world model of the outcome for this timestep (s_t, a_t, s_{t+1}, r, t, ua_t)
         if record_training_data_for_user and not self.use_world_model:
             self.world_model.register_experience_replay_tuple(self.state_user, self.agent.action,
-                                                              self.state_user_next, self.reward, self.episode_over,
+                                                              self.state_user_next, self.reward,
+                                                              self.episode_over,
                                                               self.user_action)
 
         return (self.episode_over, self.reward)
 
     def reward_function(self, dialog_status):
+        """
+        根据 dialog_status 判断对话状态。计算奖励
+
+        :param dialog_status: dialog_config.FAILED_DIALOG or dialog_config.SUCCESS_DIALOG or other
+        :return: reward
+        """
         """ Reward Function 1: a reward function based on the dialog_status """
         if dialog_status == dialog_config.FAILED_DIALOG:
             reward = -self.user.max_turn  # 10
@@ -139,6 +163,12 @@ class DialogManager:
         return reward
 
     def print_function(self, agent_action=None, user_action=None):
+        '''
+        在AgentCmd、Debug、auto_suggest时才有用
+        :param agent_action:
+        :param user_action:
+        :return:
+        '''
         """ Print Function """
 
         if agent_action:
@@ -158,7 +188,7 @@ class DialogManager:
 
             if dialog_config.auto_suggest == 1:
                 print(
-                    '(Suggested Values: %s)' % (
+                        '(Suggested Values: %s)' % (
                     self.state_tracker.get_suggest_slots_values(agent_action['request_slots'])))
         elif user_action:
             if dialog_config.run_mode == 0:
@@ -177,7 +207,8 @@ class DialogManager:
                 user_request_slots = user_action['request_slots']
                 if 'ticket' in user_request_slots.keys(): del user_request_slots['ticket']
                 if len(user_request_slots) > 0:
-                    possible_values = self.state_tracker.get_suggest_slots_values(user_action['request_slots'])
+                    possible_values = self.state_tracker.get_suggest_slots_values(
+                        user_action['request_slots'])
                     for slot in possible_values.keys():
                         if len(possible_values[slot]) > 0:
                             print('(Suggested Values: %s: %s)' % (slot, possible_values[slot]))
@@ -185,4 +216,5 @@ class DialogManager:
                             print('(Suggested Values: there is no available %s)' % (slot))
                 else:
                     kb_results = self.state_tracker.get_current_kb_results()
-                    print ('(Number of movies in KB satisfying current constraints: %s)' % len(kb_results))
+                    print ('(Number of movies in KB satisfying current constraints: %s)' % len(
+                        kb_results))

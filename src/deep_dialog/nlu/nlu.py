@@ -1,3 +1,4 @@
+#encoding:utf-8
 '''
 Created on Jul 13, 2016
 
@@ -17,6 +18,11 @@ class nlu:
         pass
     
     def generate_dia_act(self, annot):
+        """
+
+        :param annot: nl sentence
+        :return:
+        """
         """ generate the Dia-Act with NLU model """
         
         if len(annot) > 0:
@@ -66,7 +72,7 @@ class nlu:
         self.word_dict = copy.deepcopy(model_params['word_dict'])
         self.slot_dict = copy.deepcopy(model_params['slot_dict'])
         self.act_dict = copy.deepcopy(model_params['act_dict'])
-        self.tag_set = copy.deepcopy(model_params['tag_set'])
+        self.tag_set = copy.deepcopy(model_params['tag_set']) # NLU模型将任务视为序列标注任务，标注BIO与意图标签
         self.params = copy.deepcopy(model_params['params'])
         self.inverse_tag_dict = {self.tag_set[k]:k for k in self.tag_set.keys()}
         

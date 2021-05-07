@@ -1,3 +1,4 @@
+#encoding:utf-8
 '''
 Created on Oct 17, 2016
 
@@ -20,7 +21,13 @@ class nlg:
         pass
     
     def post_process(self, pred_template, slot_val_dict, slot_dict):
-        """ post_process to fill the slot in the template sentence """
+        """
+        post_process to fill the slot in the template sentence
+        :param pred_template: nlg model预测出的nl template
+        :param slot_val_dict: dia_act['inform_slots']
+        :param slot_dict: self.slot_dict。对应了 slot_set.txt 中slot与index（line number）的映射
+        :return:
+        """
         
         sentence = pred_template
         suffix = "_PLACEHOLDER"
@@ -48,27 +55,37 @@ class nlg:
 
     
     def convert_diaact_to_nl(self, dia_act, turn_msg):
+        '''
+        Convert Dia_Act into NL: Rule + Model
+        :param dia_act: 字典，至少包含keys={requests_slots, inform_slots, diaact}
+        :param turn_msg: 'age' 或 'usr'
+        :return:
+        '''
         """ Convert Dia_Act into NL: Rule + Model """
         
         sentence = ""
-        boolean_in = False
+        boolean_in = False # 是否使用 rule nl 填充完成
         
         # remove I do not care slot in task(complete)
+        # 如果任务要了完成点，但是有票，就先删掉一些 do not care 的slot
         if dia_act['diaact'] == 'inform' and 'taskcomplete' in dia_act['inform_slots'].keys() and dia_act['inform_slots']['taskcomplete'] != dialog_config.NO_VALUE_MATCH:
             inform_slot_set = dia_act['inform_slots'].keys()
             for slot in inform_slot_set:
                 if dia_act['inform_slots'][slot] == dialog_config.I_DO_NOT_CARE: del dia_act['inform_slots'][slot]
-        
+
+        # Rule nlg. 查找是否与目前diaact、inform_slots.keys()、request_slots.keys()完全对应的nl模板，如果有，就填充
         if dia_act['diaact'] in self.diaact_nl_pairs['dia_acts'].keys():
             for ele in self.diaact_nl_pairs['dia_acts'][dia_act['diaact']]:
                 if set(ele['inform_slots']) == set(dia_act['inform_slots'].keys()) and set(ele['request_slots']) == set(dia_act['request_slots'].keys()):
                     sentence = self.diaact_to_nl_slot_filling(dia_act, ele['nl'][turn_msg])
                     boolean_in = True
                     break
-        
+
+        # 如果任务到了完成点，但是没票，直接说 sorry
         if dia_act['diaact'] == 'inform' and 'taskcomplete' in dia_act['inform_slots'].keys() and dia_act['inform_slots']['taskcomplete'] == dialog_config.NO_VALUE_MATCH:
             sentence = "Oh sorry, there is no ticket available."
-        
+
+        # Model nlg
         if boolean_in == False: sentence = self.translate_diaact(dia_act)
         return sentence
         
@@ -81,7 +98,8 @@ class nlg:
         act_dict = self.act_dict
         slot_dict = self.slot_dict
         inverse_word_dict = self.inverse_word_dict
-    
+
+        # 编码dia_act['diaact']
         act_rep = np.zeros((1, len(act_dict)))
         act_rep[0, act_dict[dia_act['diaact']]] = 1.0
     
@@ -97,7 +115,8 @@ class nlg:
             word_rep = np.zeros((1, len(word_dict)))
             words = np.zeros((1, len(word_dict)))
             words[0, word_dict['s_o_s']] = 1.0
-    
+
+        # 编码dia_act['inform_slots']的slot-value
         for slot in dia_act['inform_slots'].keys():
             slot_index = slot_dict[slot]
             slot_rep[0, slot_index*slot_rep_bit] = 1.0
@@ -110,7 +129,8 @@ class nlg:
                 elif self.params['dia_slot_val'] == 1:
                     if slot_val in word_dict.keys():
                         word_rep[0, word_dict[slot_val]] = 1.0
-                    
+
+        # 编码dia_act['request_slots']
         for slot in dia_act['request_slots'].keys():
             slot_index = slot_dict[slot]
             slot_rep[0, slot_index*slot_rep_bit + 1] = 1.0
@@ -145,21 +165,27 @@ class nlg:
             input_size = model_params['model']['WLSTM'].shape[0] - hidden_size - 1
             rnnmodel = lstm_decoder_tanh(diaact_input_size, input_size, hidden_size, output_size)
         
-        rnnmodel.model = copy.deepcopy(model_params['model'])
+        rnnmodel.model = copy.deepcopy(model_params['model']) # rnn模型的w、b等trainable参数
         model_params['params']['beam_size'] = dialog_config.nlg_beam_size
         
         self.model = rnnmodel
         self.word_dict = copy.deepcopy(model_params['word_dict'])
         self.template_word_dict = copy.deepcopy(model_params['template_word_dict'])
-        self.slot_dict = copy.deepcopy(model_params['slot_dict'])
-        self.act_dict = copy.deepcopy(model_params['act_dict'])
+        self.slot_dict = copy.deepcopy(model_params['slot_dict'])  # 与 slot_set.txt 相同
+        self.act_dict = copy.deepcopy(model_params['act_dict'])  # 与 dia_acts.txt 相同
         self.inverse_word_dict = {self.template_word_dict[k]:k for k in self.template_word_dict.keys()}
-        self.params = copy.deepcopy(model_params['params'])
+        self.params = copy.deepcopy(model_params['params']) # 模型超参数
         
     
     def diaact_to_nl_slot_filling(self, dia_act, template_sentence):
-        """ Replace the slots with its values """
-        
+        """
+        将slot的value填入nl template中。
+        如果存在slot的值为dialog_config.I_NO_VALUE_MATCH，就返回'slot_name is not available!'
+        如果所有slot的值都为dialog_config.I_DO_NOT_CARE，就返回dialog_config.I_DO_NOT_CARE
+        :param dia_act: 字典，至少包含keys={requests_slots, inform_slots, diaact}
+        :param template_sentence: string类型。nl模板的句子，需要将 $slot_name$ 替换为对应的slot的value
+        :return:
+        """
         sentence = template_sentence
         counter = 0
         for slot in dia_act['inform_slots'].keys():

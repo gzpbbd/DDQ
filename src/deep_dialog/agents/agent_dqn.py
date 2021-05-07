@@ -1,3 +1,5 @@
+#encoding:utf-8
+
 '''
 Created on Oct 30, 2017
 
@@ -29,9 +31,16 @@ Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state'
 
 class AgentDQN(Agent):
     def __init__(self, movie_dict=None, act_set=None, slot_set=None, params=None):
+        '''
+        初始化参数，实例化DQN，并加载预训练的模型（如果指定了）
+        :param movie_dict: 电影数据库，每个电影对应一个字典
+        :param act_set: 可选的act集合
+        :param slot_set: 可选的slot集合
+        :param params: 配置参数
+        '''
         self.movie_dict = movie_dict
-        self.act_set = act_set
-        self.slot_set = slot_set
+        self.act_set = act_set # dia_acts.txt得到的字典
+        self.slot_set = slot_set  # slot_set.txt得到的字典
         self.act_cardinality = len(act_set.keys())
         self.slot_cardinality = len(slot_set.keys())
 
@@ -43,6 +52,7 @@ class AgentDQN(Agent):
         self.agent_act_level = params['agent_act_level']
 
         self.experience_replay_pool_size = params.get('experience_replay_pool_size', 5000)
+        # deque 双端队列
         self.experience_replay_pool = deque(
             maxlen=self.experience_replay_pool_size)  # experience replay pool <s_t, a_t, r_t, s_t+1>
         self.experience_replay_pool_from_model = deque(
@@ -51,12 +61,14 @@ class AgentDQN(Agent):
 
         self.hidden_size = params.get('dqn_hidden_size', 60)
         self.gamma = params.get('gamma', 0.9)
+        # predict mode 不需要保存对话数据。只根据状态输出结果。 而 train mode 需要保存对话数据入 replay pool，用于之后训练
         self.predict_mode = params.get('predict_mode', False)
         self.warm_start = params.get('warm_start', 0)
 
         self.max_turn = params['max_turn'] + 5
         self.state_dimension = 2 * self.act_cardinality + 7 * self.slot_cardinality + 3 + self.max_turn
 
+        # DQN 使用了numpy编写，只有两个dense层。最后一层输出为每个action对应的值，无激活函数
         self.dqn = DQN(self.state_dimension, self.hidden_size, self.num_actions).to(DEVICE)
         self.target_dqn = DQN(self.state_dimension, self.hidden_size, self.num_actions).to(DEVICE)
         self.target_dqn.load_state_dict(self.dqn.state_dict())
@@ -75,8 +87,8 @@ class AgentDQN(Agent):
     def initialize_episode(self):
         """ Initialize a new episode. This function is called every time a new episode is run. """
 
-        self.current_slot_id = 0
-        self.phase = 0
+        self.current_slot_id = 0 # 对应了当前self.request_set请求的slot。只有在replay buffer满了之后起作用
+        self.phase = 0 # 对应了当前的任务完成阶段。0: 任务未完成或者报告任务完成，1： 说thanks
         self.request_set = ['moviename', 'starttime', 'city', 'date', 'theater', 'numberofpeople']
 
     def state_to_action(self, state):
@@ -92,83 +104,70 @@ class AgentDQN(Agent):
         return {'act_slot_response': act_slot_response, 'act_slot_value_response': None}
 
     def prepare_state_representation(self, state):
+        '''
+        使用one-hot或bag编码了state中的部分信息
+        :param state: 当前状态的字典。键的集合为(agent_action, user_action, turn, current_slot,
+        kb_results_dict, history)
+        :return:
+        '''
         """ Create the representation for each state """
+
+        # print('---- agent state\n{}'.format(json.dumps(state,indent=4)))
 
         user_action = state['user_action']
         current_slots = state['current_slots']
         kb_results_dict = state['kb_results_dict']
         agent_last = state['agent_action']
 
-        ########################################################################
         #   Create one-hot of acts to represent the current user action
-        ########################################################################
         user_act_rep = np.zeros((1, self.act_cardinality))
         user_act_rep[0, self.act_set[user_action['diaact']]] = 1.0
 
-        ########################################################################
         #     Create bag of inform slots representation to represent the current user action
-        ########################################################################
         user_inform_slots_rep = np.zeros((1, self.slot_cardinality))
         for slot in user_action['inform_slots'].keys():
             user_inform_slots_rep[0, self.slot_set[slot]] = 1.0
 
-        ########################################################################
         #   Create bag of request slots representation to represent the current user action
-        ########################################################################
         user_request_slots_rep = np.zeros((1, self.slot_cardinality))
         for slot in user_action['request_slots'].keys():
             user_request_slots_rep[0, self.slot_set[slot]] = 1.0
 
-        ########################################################################
         #   Creat bag of filled_in slots based on the current_slots
-        ########################################################################
         current_slots_rep = np.zeros((1, self.slot_cardinality))
         for slot in current_slots['inform_slots']:
             current_slots_rep[0, self.slot_set[slot]] = 1.0
 
-        ########################################################################
         #   Encode last agent act
-        ########################################################################
         agent_act_rep = np.zeros((1, self.act_cardinality))
         if agent_last:
             agent_act_rep[0, self.act_set[agent_last['diaact']]] = 1.0
 
-        ########################################################################
         #   Encode last agent inform slots
-        ########################################################################
         agent_inform_slots_rep = np.zeros((1, self.slot_cardinality))
         if agent_last:
             for slot in agent_last['inform_slots'].keys():
                 agent_inform_slots_rep[0, self.slot_set[slot]] = 1.0
 
-        ########################################################################
         #   Encode last agent request slots
-        ########################################################################
         agent_request_slots_rep = np.zeros((1, self.slot_cardinality))
         if agent_last:
             for slot in agent_last['request_slots'].keys():
                 agent_request_slots_rep[0, self.slot_set[slot]] = 1.0
 
-        # turn_rep = np.zeros((1,1)) + state['turn'] / 10.
         turn_rep = np.zeros((1, 1))
 
-        ########################################################################
         #  One-hot representation of the turn count?
-        ########################################################################
         turn_onehot_rep = np.zeros((1, self.max_turn))
         turn_onehot_rep[0, state['turn']] = 1.0
 
-        # ########################################################################
         # #   Representation of KB results (scaled counts)
-        # ########################################################################
         # kb_count_rep = np.zeros((1, self.slot_cardinality + 1)) + kb_results_dict['matching_all_constraints'] / 100.
         # for slot in kb_results_dict:
         #     if slot in self.slot_set:
         #         kb_count_rep[0, self.slot_set[slot]] = kb_results_dict[slot] / 100.
         #
-        # ########################################################################
         # #   Representation of KB results (binary)
-        # ########################################################################
         # kb_binary_rep = np.zeros((1, self.slot_cardinality + 1)) + np.sum( kb_results_dict['matching_all_constraints'] > 0.)
         # for slot in kb_results_dict:
         #     if slot in self.slot_set:
@@ -176,9 +175,7 @@ class AgentDQN(Agent):
 
         kb_count_rep = np.zeros((1, self.slot_cardinality + 1))
 
-        ########################################################################
         #   Representation of KB results (binary)
-        ########################################################################
         kb_binary_rep = np.zeros((1, self.slot_cardinality + 1))
 
         self.final_representation = np.hstack(
@@ -187,6 +184,11 @@ class AgentDQN(Agent):
         return self.final_representation
 
     def run_policy(self, representation):
+        '''
+        replay pool未满时使用rule_policy，否则使用DQN_policy
+        :param representation:
+        :return:
+        '''
         """ epsilon-greedy policy """
 
         if random.random() < self.epsilon:
@@ -200,6 +202,10 @@ class AgentDQN(Agent):
                 return self.DQN_policy(representation)
 
     def rule_policy(self):
+        '''
+        action 为先依次 request 几个固定的的槽位（self.request_set），然后inform taskcomplete、thanks
+        :return: action对应的标号
+        '''
         """ Rule Policy """
 
         act_slot_response = {}
@@ -222,6 +228,10 @@ class AgentDQN(Agent):
         return self.action_index(act_slot_response)
 
     def DQN_policy(self, state_representation):
+        '''
+        :param state_representation:
+        :return: DQN网络预测出的最大概率的动作
+       '''
         """ Return action from DQN"""
 
         with torch.no_grad():
@@ -239,6 +249,18 @@ class AgentDQN(Agent):
         return None
 
     def register_experience_replay_tuple(self, s_t, a_t, reward, s_tplus1, episode_over, st_user, from_model=False):
+        """
+        将当前轮的数据转为数字表示存入 replay_pool 中
+
+        :param s_t:
+        :param a_t:
+        :param reward:
+        :param s_tplus1:
+        :param episode_over:
+        :param st_user:
+        :param from_model: 对话数据是否来自与 world model 的交互
+        :return:
+        """
         """ Register feedback from either environment or world model, to be stored as future training data """
 
         state_t_rep = self.prepare_state_representation(s_t)
@@ -272,6 +294,13 @@ class AgentDQN(Agent):
         return Transition(*np_batch)
 
     def train(self, batch_size=1, num_batches=100):
+        """
+        使用 experience buffer (user + world model) 训练 DQN 网络。
+
+        :param batch_size:
+        :param num_batches: 迭代的 epoch 的数量
+        :return:
+        """
         """ Train DQN with experience buffer that comes from both user and world model interaction."""
 
         self.cur_bellman_err = 0.
@@ -375,6 +404,11 @@ class AgentDQN(Agent):
         return model
 
     def set_user_planning(self, user_planning):
+        '''
+
+        :param user_planning: world model
+        :return:
+        '''
         self.user_planning = user_planning
 
     def save(self, filename):
@@ -384,4 +418,9 @@ class AgentDQN(Agent):
         self.dqn.load_state_dict(torch.load(filename))
 
     def reset_dqn_target(self):
+        """
+        更新 target DQN 的参数
+
+        :return:
+        """
         self.target_dqn.load_state_dict(self.dqn.state_dict())

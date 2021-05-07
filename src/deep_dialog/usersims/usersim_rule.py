@@ -1,3 +1,4 @@
+#encoding:utf-8
 """
 Created on May 14, 2016
 
@@ -21,6 +22,13 @@ class RuleSimulator(UserSimulator):
     """ A rule-based user simulator for testing dialog policy """
     
     def __init__(self, movie_dict=None, act_set=None, slot_set=None, start_set=None, params=None):
+        '''
+        :param movie_dict: 字典。电影领域每个slot的候选value
+        :param act_set: 可选的act集合
+        :param slot_set: 可选的slot集合
+        :param start_set: 第一轮的goal集合
+        :param params: 配置参数
+        '''
         """ Constructor shared by all user simulators """
         
         self.movie_dict = movie_dict
@@ -39,16 +47,21 @@ class RuleSimulator(UserSimulator):
         self.learning_phase = params['learning_phase']
     
     def initialize_episode(self):
+        '''
+        采样一个goal与第一个user action
+
+        :return: 采样得到的第一个 user action
+        '''
         """ Initialize a new episode (dialog) 
         state['history_slots']: keeps all the informed_slots
         state['rest_slots']: keep all the slots (which is still in the stack yet)
         """
         
         self.state = {}
-        self.state['history_slots'] = {}
+        self.state['history_slots'] = {}  # 应该是保存所有出现过的 agent_action['inform_slots']
         self.state['inform_slots'] = {}
         self.state['request_slots'] = {}
-        self.state['rest_slots'] = []
+        self.state['rest_slots'] = []  # 应该是保存所有 goal 中还未消耗掉的 slot-value (inform_slots 与 request_slots)
         self.state['turn'] = 0
         
         self.episode_over = False
@@ -121,6 +134,12 @@ class RuleSimulator(UserSimulator):
         return self.sample_goal
     
     def corrupt(self, user_action):
+        """
+        按一定概率给 user_action 添加噪声
+
+        :param user_action:
+        :return:
+        """
         """ Randomly corrupt an action with error probs (slot_err_probability and slot_err_mode) on Slot and Intent (intent_err_probability). """
         
         for slot in user_action['inform_slots'].keys():
@@ -167,6 +186,15 @@ class RuleSimulator(UserSimulator):
         self.goal['request_slots']['date'] = 'UNK'
         
     def next(self, system_action):
+        """
+        基于 system_action，更新 user 的 state，和 产生 user_action
+
+        :param system_action:
+        :return:
+            response_action: user action。
+            self.episode_over: 对话是否结束。
+            self.dialog_status: 对话状态。dialog_config.NO_OUTCOME_YET or dialog_config.FAILED_DIALOG or dialog_config.SUCCESS_DIALOG
+        """
         """ Generate next User Action based on last System Action """
         
         self.state['turn'] += 2
@@ -176,13 +204,15 @@ class RuleSimulator(UserSimulator):
         sys_act = system_action['diaact']
 
         # print sys_act
-        
+
+        # 如果对话长度达到限制，直接令对话关闭
         if (self.max_turn > 0 and self.state['turn'] > self.max_turn):
             self.dialog_status = dialog_config.FAILED_DIALOG
             self.episode_over = True
             self.state['request_slots'].clear()
             self.state['inform_slots'].clear()
             self.state['diaact'] = "closing"
+        # 否则根据 system_action['diaact'] 的类型，产生相应的 self.state
         else:
             self.state['history_slots'].update(self.state['inform_slots'])
             self.state['inform_slots'].clear()
@@ -207,7 +237,8 @@ class RuleSimulator(UserSimulator):
             self.state['inform_slots'].clear()
 
         self.corrupt(self.state)
-        
+
+        # 将 self.state 填入 user_action
         response_action = {}
         response_action['diaact'] = self.state['diaact']
         response_action['inform_slots'] = self.state['inform_slots']
@@ -253,16 +284,20 @@ class RuleSimulator(UserSimulator):
         if 'ticket' in rest_slot_set:
             rest_slot_set.remove('ticket')
 
+        # user 还有request_slot 或 rest_slot
         if len(request_slot_set) > 0 or len(rest_slot_set) > 0:
             self.dialog_status = dialog_config.FAILED_DIALOG
 
         for info_slot in self.state['history_slots'].keys():
+            # 如果system没找到匹配的movie
             if self.state['history_slots'][info_slot] == dialog_config.NO_VALUE_MATCH:
                 self.dialog_status = dialog_config.FAILED_DIALOG
+            # 如果system inform的 slot value 与 user goal 的slot value 不一样
             if info_slot in self.goal['inform_slots'].keys():
                 if self.state['history_slots'][info_slot] != self.goal['inform_slots'][info_slot]:
                     self.dialog_status = dialog_config.FAILED_DIALOG
 
+        # 如果system没找到匹配的movie
         if 'ticket' in system_action['inform_slots'].keys():
             if system_action['inform_slots']['ticket'] == dialog_config.NO_VALUE_MATCH:
                 self.dialog_status = dialog_config.FAILED_DIALOG
@@ -336,7 +371,8 @@ class RuleSimulator(UserSimulator):
         
     def response_inform(self, system_action):
         """ Response for Inform (System Action) """
-        
+
+        # 如果 system 说 task complete，就检查 task 是否完成: 当存在符合 goal 中所有 inform_slots 限制的 movie，算任务成功
         if 'taskcomplete' in system_action['inform_slots'].keys(): # check all the constraints from agents with user goal
             self.state['diaact'] = "thanks"
             #if 'ticket' in self.state['rest_slots']: self.state['request_slots']['ticket'] = 'UNK'
@@ -359,12 +395,15 @@ class RuleSimulator(UserSimulator):
                     break
 
             self.state['request_slots'].clear()
+
+        # 如果还没到 task complete 的时候
         else:
             for slot in system_action['inform_slots'].keys():
                 self.state['history_slots'][slot] = system_action['inform_slots'][slot]
 
+                # 如果 slot 同时出现在 user_goal['inform_slots'] 与 system_action['inform_slots'] 中
                 if slot in self.goal['inform_slots'].keys():
-                    # print 'hit1'
+                    # 如果同一个 slot，在 user_goal['inform_slots'] 与 system_action['inform_slots'] 中的 值相等
                     if system_action['inform_slots'][slot] == self.goal['inform_slots'][slot]:
                         if slot in self.state['rest_slots']: self.state['rest_slots'].remove(slot)
                                 
@@ -391,6 +430,7 @@ class RuleSimulator(UserSimulator):
                         else: # how to reply here?
                             self.state['diaact'] = "thanks" # replies "closing"? or replies "confirm_answer"
                             self.state['request_slots'].clear() # chagned on Dec08
+                    # 如果同一个 slot，在 user_goal['inform_slots'] 与 system_action['inform_slots'] 中的 值不相等
                     else: # != value  Should we deny here or ?
                         ########################################################################
                         # TODO When agent informs(slot=value), where the value is different with the constraint in user goal, Should we deny or just inform the correct value?
