@@ -7,7 +7,16 @@ train时：
 
     warm_start_simulation() 中 user_environment=True，warm_start=1
 
-dia_acts.txt 11个action
+只有三个地方 train 了模型：
+    1. warm_start_simulation() 中用户与 rule_based policy agent 完成所有 episode 后 train 了 world_model
+    2. run_episodes() 中每一个 episode 都 train 了 world_model
+    3. run_episodes() 中每一个 episode 都 train 了 agent
+
+world_model、agent 是否保存训练经验需要经过两层判断：
+    1. dialog_manager.next_turn() 的参数控制了第一层
+    2. world_model、agent 内部由 predict_mode 控制了第二层
+
+da_acts.txt 11个action
 slot_set.txt 29个slot
 dia_act_nl_pairs.v6.json 6个action
 
@@ -83,6 +92,10 @@ requests 型动作都只有一个 slot
             1. 如果 agent.action == 'taskcomplete'，则将所有 agent 与 user inform 过的 slot-value 填入
             agent_action 的 inform_slots 中。
             2. 否则，更新 agent_action 的 inform_slots 中已有的 slot
+
+跑算法时：
+    train: write_model_dir 控制模型保存位置
+    test: trained_model_path train时保存的最好模型
 
 ----------------------------------
 ---- user.sample_goal:

@@ -1,4 +1,4 @@
-#encoding:utf-8
+# encoding:utf-8
 from .usersim import UserSimulator
 import argparse, json, random, copy, sys
 import numpy as np
@@ -9,8 +9,12 @@ from deep_dialog import dialog_config
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+import logging
+import time
+import config
 
-Transition = namedtuple('Transition', ('state', 'agent_action', 'next_state', 'reward', 'term', 'user_action'))
+Transition = namedtuple('Transition',
+                        ('state', 'agent_action', 'next_state', 'reward', 'term', 'user_action'))
 
 
 class ModelBasedSimulator(UserSimulator):
@@ -55,10 +59,12 @@ class ModelBasedSimulator(UserSimulator):
 
         self.training_examples = deque(maxlen=self.experience_replay_pool_size)
 
-        self.predict_model = True
+        self.predict_mode = True
 
         # SimulatorModel 模型结构对应了论文 world model 的描述
-        self.model = SimulatorModel(self.num_actions, self.hidden_size, self.state_dimension, self.num_actions_user, 1)
+        self.device = torch.device(config.torch_device)
+        self.model = SimulatorModel(self.num_actions, self.hidden_size, self.state_dimension,
+                                    self.num_actions_user, 1).to(self.device)
         self.optimizer = optim.RMSprop(self.model.parameters(), lr=0.001)
 
     def initialize_episode(self):
@@ -94,7 +100,8 @@ class ModelBasedSimulator(UserSimulator):
             known_slot = random.choice(self.goal['inform_slots'].keys())
             self.state['inform_slots'][known_slot] = self.goal['inform_slots'][known_slot]
 
-            if 'moviename' in self.goal['inform_slots'].keys():  # 'moviename' must appear in the first user turn
+            if 'moviename' in self.goal[
+                'inform_slots'].keys():  # 'moviename' must appear in the first user turn
                 self.state['inform_slots']['moviename'] = self.goal['inform_slots']['moviename']
 
             for slot in self.goal['inform_slots'].keys():
@@ -178,11 +185,11 @@ class ModelBasedSimulator(UserSimulator):
                 self.optimizer.zero_grad()
 
                 batch = self.sample_from_buffer(batch_size)
-                state = torch.FloatTensor(batch.state)
-                action = torch.LongTensor(batch.agent_action)
-                reward = torch.FloatTensor(batch.reward)
-                term = torch.FloatTensor(np.asarray(batch.term, dtype=np.int32))
-                user_action = torch.LongTensor(batch.user_action).squeeze(1)
+                state = torch.FloatTensor(batch.state).to(self.device)
+                action = torch.LongTensor(batch.agent_action).to(self.device)
+                reward = torch.FloatTensor(batch.reward).to(self.device)
+                term = torch.FloatTensor(np.asarray(batch.term, dtype=np.int32)).to(self.device)
+                user_action = torch.LongTensor(batch.user_action).squeeze(1).to(self.device)
 
                 reward_, term_, user_action_ = self.model(state, action)
 
@@ -194,9 +201,11 @@ class ModelBasedSimulator(UserSimulator):
                 self.optimizer.step()
                 self.total_loss += loss.item()
 
-            print ("Total cost for user modeling: %.4f, training replay pool %s" % (
+            logging.debug("Total cost for user modeling: %.4f, training replay pool %s" % (
                 float(self.total_loss) / (float(len(self.training_examples)) / float(batch_size)),
                 len(self.training_examples)))
+
+        # logging.error("sim train time {}".format(time.time() - start_time))
 
     def train_by_iter(self, batch_size=1, num_batches=1):
         """
@@ -253,7 +262,8 @@ class ModelBasedSimulator(UserSimulator):
         s = self.prepare_state_representation(s)
         g = self.prepare_user_goal_representation(self.sample_goal)
         s = np.hstack([s, g])
-        reward, term, action = self.predict(torch.FloatTensor(s), torch.LongTensor(np.asarray(a)[:, None]))
+        reward, term, action = self.predict(torch.FloatTensor(s),
+                                            torch.LongTensor(np.asarray(a)[:, None]))
         action = action.item()
         reward = reward.item()
         term = term.item()
@@ -281,7 +291,7 @@ class ModelBasedSimulator(UserSimulator):
         return response_action, term, reward
 
     def predict(self, s, a):
-        return self.model.predict(s, a)
+        return self.model.predict(s.to(self.device), a.to(self.device))
 
     def register_user_goal(self, goal):
         self.user_goal = goal
@@ -296,10 +306,10 @@ class ModelBasedSimulator(UserSimulator):
 
         # rule
         if act_slot_response['diaact'] == 'request': act_slot_response['inform_slots'] = {}
-        if act_slot_response['diaact'] in ['thanks', 'deny', 'closing']: 
+        if act_slot_response['diaact'] in ['thanks', 'deny', 'closing']:
             act_slot_response['inform_slots'] = {}
             act_slot_response['request_slots'] = {}
-            
+
         for (i, action) in enumerate(self.feasible_actions_users):
             if act_slot_response == action:
                 return i
@@ -310,6 +320,8 @@ class ModelBasedSimulator(UserSimulator):
     def register_experience_replay_tuple(self, s_t, agent_a_t, s_tplus1, reward, term, user_a_t):
         """
         将当前轮的数据转为数字表示存入 replay_pool 中
+        # 保存经验的情况：
+        # 1. self.predict_mode == true
 
         :param s_t:
         :param agent_a_t:
@@ -338,11 +350,11 @@ class ModelBasedSimulator(UserSimulator):
             reward_t = -0.1
 
         state_tplus1_rep = self.prepare_state_representation(s_tplus1)
-        training_example_for_user = (state_t_rep, agent_action_t, state_tplus1_rep, reward_t, term, action_idx)
+        training_example_for_user = (
+            state_t_rep, agent_action_t, state_tplus1_rep, reward_t, term, action_idx)
 
-        if self.predict_model:
+        if self.predict_mode:
             self.training_examples.append(training_example_for_user)
-
 
     def prepare_state_representation(self, state):
         """ Create the representation for each state """
@@ -435,6 +447,8 @@ class ModelBasedSimulator(UserSimulator):
         #         kb_binary_rep[0, self.slot_set[slot]] = np.sum(kb_results_dict[slot] > 0.)
 
         self.final_representation = np.hstack(
-            [user_act_rep, user_inform_slots_rep, user_request_slots_rep, agent_act_rep, agent_inform_slots_rep,
-             agent_request_slots_rep, current_slots_rep, turn_rep, turn_onehot_rep, kb_binary_rep, kb_count_rep])
+            [user_act_rep, user_inform_slots_rep, user_request_slots_rep, agent_act_rep,
+             agent_inform_slots_rep,
+             agent_request_slots_rep, current_slots_rep, turn_rep, turn_onehot_rep, kb_binary_rep,
+             kb_count_rep])
         return self.final_representation

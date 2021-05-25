@@ -1,4 +1,4 @@
-#encoding:utf-8
+# encoding:utf-8
 
 '''
 Created on Oct 30, 2017
@@ -23,8 +23,9 @@ from deep_dialog.qlearning import DQN
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
-
-DEVICE = torch.device('cpu')
+import logging
+import time
+import config
 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'term'))
 
@@ -39,7 +40,7 @@ class AgentDQN(Agent):
         :param params: 配置参数
         '''
         self.movie_dict = movie_dict
-        self.act_set = act_set # dia_acts.txt得到的字典
+        self.act_set = act_set  # dia_acts.txt得到的字典
         self.slot_set = slot_set  # slot_set.txt得到的字典
         self.act_cardinality = len(act_set.keys())
         self.slot_cardinality = len(slot_set.keys())
@@ -57,7 +58,7 @@ class AgentDQN(Agent):
             maxlen=self.experience_replay_pool_size)  # experience replay pool <s_t, a_t, r_t, s_t+1>
         self.experience_replay_pool_from_model = deque(
             maxlen=self.experience_replay_pool_size)  # experience replay pool <s_t, a_t, r_t, s_t+1>
-        self.running_expereince_pool = None # hold experience from both user and world model
+        self.running_expereince_pool = None  # hold experience from both user and world model
 
         self.hidden_size = params.get('dqn_hidden_size', 60)
         self.gamma = params.get('gamma', 0.9)
@@ -69,8 +70,10 @@ class AgentDQN(Agent):
         self.state_dimension = 2 * self.act_cardinality + 7 * self.slot_cardinality + 3 + self.max_turn
 
         # DQN 使用了numpy编写，只有两个dense层。最后一层输出为每个action对应的值，无激活函数
-        self.dqn = DQN(self.state_dimension, self.hidden_size, self.num_actions).to(DEVICE)
-        self.target_dqn = DQN(self.state_dimension, self.hidden_size, self.num_actions).to(DEVICE)
+        self.device = torch.device(config.torch_device)
+        self.dqn = DQN(self.state_dimension, self.hidden_size, self.num_actions).to(self.device)
+        self.target_dqn = DQN(self.state_dimension, self.hidden_size, self.num_actions).to(
+            self.device)
         self.target_dqn.load_state_dict(self.dqn.state_dict())
         self.target_dqn.eval()
 
@@ -87,8 +90,8 @@ class AgentDQN(Agent):
     def initialize_episode(self):
         """ Initialize a new episode. This function is called every time a new episode is run. """
 
-        self.current_slot_id = 0 # 对应了当前self.request_set请求的slot。只有在replay buffer满了之后起作用
-        self.phase = 0 # 对应了当前的任务完成阶段。0: 任务未完成或者报告任务完成，1： 说thanks
+        self.current_slot_id = 0  # 对应了当前self.request_set请求的slot。只有在replay buffer满了之后起作用
+        self.phase = 0  # 对应了当前的任务完成阶段。0: 任务未完成或者报告任务完成，1： 说thanks
         self.request_set = ['moviename', 'starttime', 'city', 'date', 'theater', 'numberofpeople']
 
     def state_to_action(self, state):
@@ -179,8 +182,10 @@ class AgentDQN(Agent):
         kb_binary_rep = np.zeros((1, self.slot_cardinality + 1))
 
         self.final_representation = np.hstack(
-            [user_act_rep, user_inform_slots_rep, user_request_slots_rep, agent_act_rep, agent_inform_slots_rep,
-             agent_request_slots_rep, current_slots_rep, turn_rep, turn_onehot_rep, kb_binary_rep, kb_count_rep])
+            [user_act_rep, user_inform_slots_rep, user_request_slots_rep, agent_act_rep,
+             agent_inform_slots_rep,
+             agent_request_slots_rep, current_slots_rep, turn_rep, turn_onehot_rep, kb_binary_rep,
+             kb_count_rep])
         return self.final_representation
 
     def run_policy(self, representation):
@@ -219,7 +224,8 @@ class AgentDQN(Agent):
             act_slot_response['inform_slots'] = {}
             act_slot_response['request_slots'] = {slot: "UNK"}
         elif self.phase == 0:
-            act_slot_response = {'diaact': "inform", 'inform_slots': {'taskcomplete': "PLACEHOLDER"},
+            act_slot_response = {'diaact': "inform",
+                                 'inform_slots': {'taskcomplete': "PLACEHOLDER"},
                                  'request_slots': {}}
             self.phase += 1
         elif self.phase == 1:
@@ -235,7 +241,7 @@ class AgentDQN(Agent):
         """ Return action from DQN"""
 
         with torch.no_grad():
-            action = self.dqn.predict(torch.FloatTensor(state_representation))
+            action = self.dqn.predict(torch.FloatTensor(state_representation).to(self.device))
         return action
 
     def action_index(self, act_slot_response):
@@ -248,9 +254,13 @@ class AgentDQN(Agent):
         raise Exception("action index not found")
         return None
 
-    def register_experience_replay_tuple(self, s_t, a_t, reward, s_tplus1, episode_over, st_user, from_model=False):
+    def register_experience_replay_tuple(self, s_t, a_t, reward, s_tplus1, episode_over, st_user,
+                                         from_model=False):
         """
         将当前轮的数据转为数字表示存入 replay_pool 中
+        # 保存经验的几种情况：
+        # 1. self.predict_mode == False and self.warm_start == 1
+        # 2. self.predict_mode == True
 
         :param s_t:
         :param a_t:
@@ -258,7 +268,7 @@ class AgentDQN(Agent):
         :param s_tplus1:
         :param episode_over:
         :param st_user:
-        :param from_model: 对话数据是否来自与 world model 的交互
+        :param from_model: 对话数据是否来自与 world model 的交互。会影响经验放入哪个池子中，但是在训练的时候不区分经验来自哪个池子。
         :return:
         """
         """ Register feedback from either environment or world model, to be stored as future training data """
@@ -268,7 +278,8 @@ class AgentDQN(Agent):
         reward_t = reward
         state_tplus1_rep = self.prepare_state_representation(s_tplus1)
         st_user = self.prepare_state_representation(s_tplus1)
-        training_example = (state_t_rep, action_t, reward_t, state_tplus1_rep, episode_over, st_user)
+        training_example = (
+            state_t_rep, action_t, reward_t, state_tplus1_rep, episode_over, st_user)
 
         if self.predict_mode == False:  # Training Mode
             if self.warm_start == 1:
@@ -305,19 +316,25 @@ class AgentDQN(Agent):
 
         self.cur_bellman_err = 0.
         self.cur_bellman_err_planning = 0.
-        self.running_expereince_pool = list(self.experience_replay_pool) + list(self.experience_replay_pool_from_model)
+        self.running_expereince_pool = list(self.experience_replay_pool) + list(
+            self.experience_replay_pool_from_model)
 
         for iter_batch in range(num_batches):
             for iter in range(len(self.running_expereince_pool) / (batch_size)):
                 self.optimizer.zero_grad()
                 batch = self.sample_from_buffer(batch_size)
 
-                state_value = self.dqn(torch.FloatTensor(batch.state)).gather(1, torch.tensor(batch.action))
-                next_state_value, _ = self.target_dqn(torch.FloatTensor(batch.next_state)).max(1)
+                state_value = self.dqn(torch.FloatTensor(batch.state).to(self.device)).gather(1,
+                                                                                              torch.tensor(
+                                                                                                  batch.action).to(
+                                                                                                  self.device))
+                next_state_value, _ = self.target_dqn(torch.FloatTensor(batch.next_state).to(
+                    self.device)).max(1)
                 next_state_value = next_state_value.unsqueeze(1)
                 term = np.asarray(batch.term, dtype=np.float32)
-                expected_value = torch.FloatTensor(batch.reward) + self.gamma * next_state_value * (
-                    1 - torch.FloatTensor(term))
+                expected_value = torch.FloatTensor(batch.reward).to(
+                    self.device) + self.gamma * next_state_value * (
+                                             1 - torch.FloatTensor(term).to(self.device))
 
                 loss = F.mse_loss(state_value, expected_value)
                 loss.backward()
@@ -325,57 +342,13 @@ class AgentDQN(Agent):
                 self.cur_bellman_err += loss.item()
 
             if len(self.experience_replay_pool) != 0:
-                print (
+                logging.debug(
                     "cur bellman err %.4f, experience replay pool %s, model replay pool %s, cur bellman err for planning %.4f" % (
-                        float(self.cur_bellman_err) / (len(self.experience_replay_pool) / (float(batch_size))),
-                        len(self.experience_replay_pool), len(self.experience_replay_pool_from_model),
+                        float(self.cur_bellman_err) / (
+                                len(self.experience_replay_pool) / (float(batch_size))),
+                        len(self.experience_replay_pool),
+                        len(self.experience_replay_pool_from_model),
                         self.cur_bellman_err_planning))
-
-    # def train_one_iter(self, batch_size=1, num_batches=100, planning=False):
-    #     """ Train DQN with experience replay """
-    #     self.cur_bellman_err = 0
-    #     self.cur_bellman_err_planning = 0
-    #     running_expereince_pool = self.experience_replay_pool + self.experience_replay_pool_from_model
-    #     for iter_batch in range(num_batches):
-    #         batch = [random.choice(self.experience_replay_pool) for i in xrange(batch_size)]
-    #         np_batch = []
-    #         for x in range(5):
-    #             v = []
-    #             for i in xrange(len(batch)):
-    #                 v.append(batch[i][x])
-    #             np_batch.append(np.vstack(v))
-    #
-    #         batch_struct = self.dqn.singleBatch(np_batch)
-    #         self.cur_bellman_err += batch_struct['cost']['total_cost']
-    #         if planning:
-    #             plan_step = 3
-    #             for _ in xrange(plan_step):
-    #                 batch_planning = [random.choice(self.experience_replay_pool) for i in
-    #                                   xrange(batch_size)]
-    #                 np_batch_planning = []
-    #                 for x in range(5):
-    #                     v = []
-    #                     for i in xrange(len(batch_planning)):
-    #                         v.append(batch_planning[i][x])
-    #                     np_batch_planning.append(np.vstack(v))
-    #
-    #                 s_tp1, r, t = self.user_planning.predict(np_batch_planning[0], np_batch_planning[1])
-    #                 s_tp1[np.where(s_tp1 >= 0.5)] = 1
-    #                 s_tp1[np.where(s_tp1 <= 0.5)] = 0
-    #
-    #                 t[np.where(t >= 0.5)] = 1
-    #
-    #                 np_batch_planning[2] = r
-    #                 np_batch_planning[3] = s_tp1
-    #                 np_batch_planning[4] = t
-    #
-    #                 batch_struct = self.dqn.singleBatch(np_batch_planning)
-    #                 self.cur_bellman_err_planning += batch_struct['cost']['total_cost']
-    #
-    #     if len(self.experience_replay_pool) != 0:
-    #         print ("cur bellman err %.4f, experience replay pool %s, cur bellman err for planning %.4f" % (
-    #             float(self.cur_bellman_err) / (len(self.experience_replay_pool) / (float(batch_size))),
-    #             len(self.experience_replay_pool), self.cur_bellman_err_planning))
 
     ################################################################################
     #    Debug Functions

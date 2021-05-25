@@ -26,6 +26,29 @@ import numpy
 import random
 import os
 
+import logging
+import time
+import sys
+
+
+def init_logging(filepath='./log/output.log'):
+    # file handler
+    file_handler = logging.FileHandler(filepath, mode='w')
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(logging.Formatter(
+        '%(message)s\n                       - %(levelname)s %(asctime)s %(filename)s(%(funcName)s %(lineno)d)'))
+
+    # stream handle
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.ERROR)
+    console_handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+
+    # setting logging
+    logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger().addHandler(file_handler)
+    logging.getLogger().addHandler(console_handler)
+
+
 seed = 5
 numpy.random.seed(seed)
 random.seed(seed)
@@ -44,6 +67,8 @@ if __name__ == "__main__":
     parser.add_argument('--dict_path', dest='dict_path', type=str,
                         default='./deep_dialog/data/dicts.v3.p',
                         help='path to the .json dictionary file')
+    parser.add_argument('--log_string', type=str, default='',
+                        help='the string appearing in log filename')
     parser.add_argument('--movie_kb_path', dest='movie_kb_path', type=str,
                         default='./deep_dialog/data/movie_kb.1k.p',
                         help='path to the movie kb .json file')
@@ -147,8 +172,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     params = vars(args)  # 返回args的属性名与属性值构成的字典
 
-    print 'Dialog Parameters: '
-    print json.dumps(params, indent=2)
+init_logging(filepath=params['log_string'])
+
+logging.debug('Dialog Parameters: ')
+logging.debug(json.dumps(params, indent=4))
 
 max_turn = params['max_turn']
 num_episodes = params['episodes']
@@ -304,9 +331,9 @@ success_rate_threshold = params['success_rate_threshold']
 save_check_point = params['save_check_point']
 
 """ Best Model and Performance Records """
-best_model = {}
+# best_model = {}
 best_res = {'success_rate': 0, 'ave_reward': float('-inf'), 'ave_turns': float('inf'), 'epoch': 0}
-best_model['model'] = copy.deepcopy(agent)
+best_res['model'] = copy.deepcopy(agent)
 best_res['success_rate'] = 0
 
 performance_records = {}
@@ -317,9 +344,10 @@ performance_records['ave_reward'] = {}
 """ Save model """
 
 
-def save_model(path, agt, success_rate, agent, best_epoch, cur_epoch):
+def save_model(path, agent=None, filename=None, agt=None, success_rate=None, best_epoch=None,
+               cur_epoch=None):
     """
-    保存模型到 path/agt_{agt}_{best_epoch}_{cur_epoch}_{success_rate}.pkl
+    保存模型到 path/agt_{agt}_{cur_epoch}_{best_epoch}_{success_rate}.pkl
 
     :param path: 目的目录
     :param agt: agent 代号
@@ -329,38 +357,41 @@ def save_model(path, agt, success_rate, agent, best_epoch, cur_epoch):
     :param cur_epoch:
     :return:
     """
-    filename = 'agt_%s_%s_%s_%.5f.pkl' % (agt, best_epoch, cur_epoch, success_rate)
+    if not os.path.exists(path):
+        os.makedirs(path)
+    if not filename:
+        filename = 'agt_%s_%05d_%05d_%.5f.pkl' % (agt, cur_epoch, best_epoch, success_rate)
     filepath = os.path.join(path, filename)
     try:
         agent.save(filepath)
-        print 'saved model in %s' % (filepath,)
+        logging.debug('saved model in %s' % (filepath,))
     except Exception, e:
-        print 'Error: Writing model fails: %s' % (filepath,)
-        print e
+        logging.warn('Error: Writing model fails: %s' % (filepath,))
+        logging.warn(e)
 
 
 """ save performance numbers """
 
 
-def save_performance_records(path, agt, records):
+def save_performance_records(path, filename, records):
     """
     保存 records 到 path/agt_{agt}_performance_records.json
 
     :param path: 目的目录
     :param agt: agent 的代号
     :param records:
+    :param mode: string. train or test or evaluate
     :return:
     """
     if not os.path.exists(path):
         os.makedirs(path)
-    filename = 'agt_%s_performance_records.json' % (agt)
     filepath = os.path.join(path, filename)
     try:
-        json.dump(records, open(filepath, "wb"))
-        print 'saved model in %s' % (filepath,)
+        json.dump(records, open(filepath, "wb"), indent=4)
+        logging.debug('saved performance in %s' % (filepath,))
     except Exception, e:
-        print 'Error: Writing model fails: %s' % (filepath,)
-        print e
+        logging.debug('Error: Writing performance fails: %s' % (filepath,))
+        logging.debug(e)
 
 
 """ Run N simulation Dialogues """
@@ -388,22 +419,17 @@ def simulation_epoch(simulation_epoch_size):
             episode_over, reward = dialog_manager.next_turn(record_training_data_for_user=False)
             cumulative_reward += reward
             if episode_over:
-
-                # print('---- dialog_manager.user.goal \n{}'.format(json.dumps(
-                #     dialog_manager.user.goal,indent=4)))
-                # print('---- dialog_manager.user.state[\'history_slots\'] \n{}'.format(json.dumps(
-                #     dialog_manager.user.state['history_slots'],indent=4)))
                 if reward > 0:
                     successes += 1
-                    print ("simulation episode %s : Success simulation_epoch" % (episode))
+                    logging.debug("simulation episode %s : Success simulation_epoch" % (episode))
                 else:
-                    print ("simulation episode %s : Fail simulation_epoch" % (episode))
+                    logging.debug("simulation episode %s : Fail simulation_epoch" % (episode))
                 cumulative_turns += dialog_manager.state_tracker.turn_count
 
     res['success_rate'] = float(successes) / simulation_epoch_size
     res['ave_reward'] = float(cumulative_reward) / simulation_epoch_size
     res['ave_turns'] = float(cumulative_turns) / simulation_epoch_size
-    print ("simulation success rate %s, ave reward %s, ave turns %s" % (
+    logging.debug("simulation success rate %s, ave reward %s, ave turns %s" % (
         res['success_rate'], res['ave_reward'], res['ave_turns']))
     return res
 
@@ -444,18 +470,20 @@ def simulation_epoch_for_training(simulation_epoch_size, grounded_for_model=Fals
                 if reward > 0:
                     successes += 1
 
-                    # print('---- episode_over \n{}'.format(json.dumps(
+                    # logging.debug('---- episode_over \n{}'.format(json.dumps(
                     #     dialog_manager.state_tracker.history_dictionaries, indent=4)))
 
-                    print ("simulation episode %s: Success simulation_epoch_for_training" % (episode))
+                    logging.debug("simulation episode %s: Success simulation_epoch_for_training" % (
+                        episode))
                 else:
-                    print ("simulation episode %s: Fail simulation_epoch_for_training" % (episode))
+                    logging.debug(
+                        "simulation episode %s: Fail simulation_epoch_for_training" % (episode))
                 cumulative_turns += dialog_manager.state_tracker.turn_count
 
     res['success_rate'] = float(successes) / simulation_epoch_size
     res['ave_reward'] = float(cumulative_reward) / simulation_epoch_size
     res['ave_turns'] = float(cumulative_turns) / simulation_epoch_size
-    print ("simulation success rate %s, ave reward %s, ave turns %s" % (
+    logging.debug("simulation success rate %s, ave reward %s, ave turns %s" % (
         res['success_rate'], res['ave_reward'], res['ave_turns']))
     return res
 
@@ -465,7 +493,7 @@ def simulation_epoch_for_training(simulation_epoch_size, grounded_for_model=Fals
 
 def warm_start_simulation():
     """
-    用户与agent对话，保存对话数据。训练 world model
+    用户与agent对话多轮，保存每轮的对话数据。所有轮次的对话结束后，用保存的对话数据训练 world model
 
     :return:
     """
@@ -484,9 +512,9 @@ def warm_start_simulation():
             if episode_over:
                 if reward > 0:
                     successes += 1
-                    print ("warm_start simulation episode %s: Success" % (episode))
+                    logging.debug("warm_start simulation episode %s: Success" % (episode))
                 else:
-                    print ("warm_start simulation episode %s: Fail" % (episode))
+                    logging.debug("warm_start simulation episode %s: Fail" % (episode))
                 cumulative_turns += dialog_manager.state_tracker.turn_count
 
         warm_start_run_epochs += 1
@@ -503,9 +531,9 @@ def warm_start_simulation():
     res['success_rate'] = float(successes) / warm_start_run_epochs
     res['ave_reward'] = float(cumulative_reward) / warm_start_run_epochs
     res['ave_turns'] = float(cumulative_turns) / warm_start_run_epochs
-    print ("Warm_Start %s epochs, success rate %s, ave reward %s, ave turns %s" % (
+    logging.debug("Warm_Start %s epochs, success rate %s, ave reward %s, ave turns %s" % (
         episode + 1, res['success_rate'], res['ave_reward'], res['ave_turns']))
-    print ("Current experience replay buffer size %s" % (len(agent.experience_replay_pool)))
+    logging.debug("Current experience replay buffer size %s" % (len(agent.experience_replay_pool)))
 
 
 def warm_start_simulation_preload():
@@ -517,7 +545,7 @@ def warm_start_simulation_preload():
 
     agent.warm_start = 2
 
-    print ("Current experience replay buffer size %s" % (len(agent.experience_replay_pool)))
+    logging.debug("Current experience replay buffer size %s" % (len(agent.experience_replay_pool)))
 
 
 def run_episodes(count, status):
@@ -525,7 +553,7 @@ def run_episodes(count, status):
 
     :param count: number of episode
     :param status: 
-    :return:
+    :return
     '''
     successes = 0
     cumulative_reward = 0
@@ -534,15 +562,21 @@ def run_episodes(count, status):
     grounded_for_model = params['grounded']
     simulation_epoch_size = planning_steps + 1
 
+    # 最初时，world_model 与 agent 的 predict_mode == True
+
     if agt == 9 and params['trained_model_path'] == None and warm_start == 1:
-        print ('warm_start starting ...')
+        logging.info('warm_start starting ...')
+        # train 了 world_model，并且设置 agent.warm_start = 2，
+        # 所以之后 agent 是否保存经验只由 agent.predict_mode 控制
         warm_start_simulation()
-        print ('warm_start finished, start RL training ...')
+        logging.info('warm_start finished, start RL training ...')
 
     for episode in xrange(count):
+        start_time = time.time()
+
         # 完成一个 episode
-        print ("Episode: %s" % (episode))
-        agent.predict_mode = False  # predict mode 下不为 agent 保存对话数据
+        logging.debug("Episode: %s" % (episode))
+        agent.predict_mode = False  # 不为 agent 保存对话数据
         dialog_manager.initialize_episode(True)  # 使用 world model
         episode_over = False
 
@@ -552,38 +586,39 @@ def run_episodes(count, status):
 
             if episode_over:
                 if reward > 0:
-                    print ("Successful Dialog!")
+                    logging.debug("Successful Dialog!")
                     successes += 1
                 else:
-                    print ("Failed Dialog!")
+                    logging.debug("Failed Dialog!")
                 cumulative_turns += dialog_manager.state_tracker.turn_count
 
         # simulation
         if agt == 9 and params['trained_model_path'] == None:
-            agent.predict_mode = True
-            world_model.predict_mode = True
+            agent.predict_mode = True  # 保存经验
+            world_model.predict_mode = True  # 保存经验
             # 运行 simulation_epoch_size 轮，第一轮使用 user，之后都是使用 world model
-            simulation_epoch_for_training(simulation_epoch_size, grounded_for_model)
+            simulation_epoch_for_training(simulation_epoch_size, grounded_for_model)  # 保存了经验
 
-            agent.predict_mode = False
-            world_model.predict_mode = False
+            agent.predict_mode = False  # 不保存经验
+            world_model.predict_mode = False  # 不保存经验
             # 运行 50 轮，全部使用 user，不使用 world model
-            simulation_res = simulation_epoch(50)
+            simulation_res = simulation_epoch(50)  # 不 保存经验
 
             performance_records['success_rate'][episode] = simulation_res['success_rate']
             performance_records['ave_turns'][episode] = simulation_res['ave_turns']
             performance_records['ave_reward'][episode] = simulation_res['ave_reward']
 
-            if simulation_res['success_rate'] >= best_res['success_rate']:
-                if simulation_res['success_rate'] >= success_rate_threshold:  # threshold = 0.30
-                    agent.predict_mode = True
-                    world_model.predict_mode = True
-                    # 运行 simulation_epoch_size 轮，第一轮使用 user，之后都是使用 world model
-                    simulation_epoch_for_training(simulation_epoch_size, grounded_for_model)
+            # if simulation_res['success_rate'] >= best_res['success_rate']:
+            #     if simulation_res['success_rate'] >= success_rate_threshold:  # threshold = 0.30
+            #         agent.predict_mode = True # 保存经验
+            #         world_model.predict_mode = True # 保存经验
+            #         # 运行 simulation_epoch_size 轮，第一轮使用 user，之后都是使用 world model
+            #         simulation_epoch_for_training(simulation_epoch_size, grounded_for_model) # 保存了经验
 
             # 更新最好的指标
             if simulation_res['success_rate'] > best_res['success_rate']:
-                best_model['model'] = copy.deepcopy(agent)
+                # best_model['model'] = copy.deepcopy(agent)
+                best_res['model'] = copy.deepcopy(agent)
                 best_res['success_rate'] = simulation_res['success_rate']
                 best_res['ave_reward'] = simulation_res['ave_reward']
                 best_res['ave_turns'] = simulation_res['ave_turns']
@@ -595,30 +630,38 @@ def run_episodes(count, status):
             if params['train_world_model']:
                 world_model.train(batch_size, 1)
 
-            print (
-                        "Simulation success rate %s, Ave reward %s, Ave turns %s, Best success rate %s" % (
-                    performance_records['success_rate'][episode],
-                    performance_records['ave_reward'][episode],
-                    performance_records['ave_turns'][episode], best_res['success_rate']))
-            if episode % save_check_point == 0:  # and params['trained_model_path'] == None: # save the model every 10 episodes
-                save_model(params['write_model_dir'], agt, best_res['success_rate'],
-                           best_model['model'],
-                           best_res['epoch'], episode)
-                save_performance_records(params['write_model_dir'], agt, performance_records)
+            logging.info(
+                "episode {}: simulation 50 episodes, getting success_rate {}, ave_reward {}, ave_turns {}".format(
+                    episode, simulation_res['success_rate'], simulation_res['ave_reward'],
+                    simulation_res['ave_turns']))
+            # if episode % save_check_point == 0:  # and params['trained_model_path'] == None: # save the model every 10 episodes
+            #     save_model(params['write_model_dir'], agt, best_res['success_rate'],
+            #                best_model['model'],
+            #                best_res['epoch'], episode)
+            #     save_performance_records(params['write_model_dir'], agt, performance_records)
 
-        print("Progress: %s / %s, Success rate: %s / %s Avg reward: %.2f Avg turns: %.2f" % (
-            episode + 1, count, successes, episode + 1, float(cumulative_reward) / (episode + 1),
-            float(cumulative_turns) / (episode + 1)))
-    print("Success rate: %s / %s Avg reward: %.2f Avg turns: %.2f" % (
+        logging.info(
+            "Progress: %s / %s, Success rate: %s / %s Avg reward: %.2f Avg turns: %.2f" % (
+                episode + 1, count, successes, episode + 1,
+                float(cumulative_reward) / (episode + 1),
+                float(cumulative_turns) / (episode + 1)))
+
+        logging.error("episode {}, time {}".format(episode, time.time() - start_time))
+
+    logging.info("Success rate: %s / %s Avg reward: %.2f Avg turns: %.2f" % (
         successes, count, float(cumulative_reward) / count, float(cumulative_turns) / count))
     status['successes'] += successes
     status['count'] += count
 
     if agt == 9 and params['trained_model_path'] == None:
-        save_model(params['write_model_dir'], agt, float(successes) / count, best_model['model'],
-                   best_res['epoch'],
-                   count)
-        save_performance_records(params['write_model_dir'], agt, performance_records)
+        save_model(params['write_model_dir'], agent=best_res['model'], filename='agt_best.pkl')
+        save_performance_records(params['write_model_dir'], 'train_performance.json',
+                                 performance_records)
+    elif agt == 9 and params['trained_model_path']:
+        save_performance_records(params['write_model_dir'], 'evaluate_performance.json',
+                                 performance_records)
 
 
+start_time = time.time()
 run_episodes(num_episodes, status)
+logging.error("total time {}".format(time.time() - start_time))

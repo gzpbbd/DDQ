@@ -18,7 +18,7 @@ class DQN(nn.Module):
         self.linear_h2o = nn.Linear(self.hidden_size, self.output_size)
 
     def forward(self, x):
-        x = F.tanh(self.linear_i2h(x))
+        x = torch.tanh(self.linear_i2h(x))
         x = self.linear_h2o(x)
         return x
 
