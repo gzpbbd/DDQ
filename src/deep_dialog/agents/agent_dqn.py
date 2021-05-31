@@ -87,6 +87,9 @@ class AgentDQN(Agent):
             self.predict_mode = True
             self.warm_start = 2
 
+        # improve
+        self.improve_replay_pool = params['improve_replay_pool']
+
     def initialize_episode(self):
         """ Initialize a new episode. This function is called every time a new episode is run. """
 
@@ -200,7 +203,8 @@ class AgentDQN(Agent):
             return random.randint(0, self.num_actions - 1)
         else:
             if self.warm_start == 1:
-                if len(self.experience_replay_pool) > self.experience_replay_pool_size:
+                if len(self.experience_replay_pool) > self.experience_replay_pool_size: #
+                    # 因为pool为deque类型，且最大为experience_replay_pool_size，所以这个判断永远为false
                     self.warm_start = 2
                 return self.rule_policy()
             else:
@@ -322,21 +326,35 @@ class AgentDQN(Agent):
         for iter_batch in range(num_batches):
             for iter in range(len(self.running_expereince_pool) / (batch_size)):
                 self.optimizer.zero_grad()
-                batch = self.sample_from_buffer(batch_size)
 
-                state_value = self.dqn(torch.FloatTensor(batch.state).to(self.device)).gather(1,
-                                                                                              torch.tensor(
-                                                                                                  batch.action).to(
-                                                                                                  self.device))
-                next_state_value, _ = self.target_dqn(torch.FloatTensor(batch.next_state).to(
-                    self.device)).max(1)
-                next_state_value = next_state_value.unsqueeze(1)
-                term = np.asarray(batch.term, dtype=np.float32)
-                expected_value = torch.FloatTensor(batch.reward).to(
-                    self.device) + self.gamma * next_state_value * (
-                                             1 - torch.FloatTensor(term).to(self.device))
+                def state_and_expected_value(_batch):
+                    _state_value = self.dqn(torch.FloatTensor(_batch.state).to(self.device)).gather(
+                        1, torch.tensor(_batch.action).to(self.device))
+                    next_state_value, _ = self.target_dqn(torch.FloatTensor(_batch.next_state).to(
+                        self.device)).max(1)
+                    next_state_value = next_state_value.unsqueeze(1)
+                    term = np.asarray(_batch.term, dtype=np.float32)
+                    _expected_value = torch.FloatTensor(_batch.reward).to(
+                        self.device) + self.gamma * next_state_value * (
+                                              1 - torch.FloatTensor(term).to(self.device))
+                    return _state_value, _expected_value
 
-                loss = F.mse_loss(state_value, expected_value)
+                # 改进经验池采样：先采样两倍batch_size的样本，再取误差最大的一批batch_size样本系列
+
+                if not self.improve_replay_pool:
+                    batch = self.sample_from_buffer(batch_size)
+                    state_value, expected_value = state_and_expected_value(batch)
+                    loss = F.mse_loss(state_value, expected_value)
+                else:
+                    batch = self.sample_from_buffer(batch_size * 2)
+                    state_value, expected_value = state_and_expected_value(batch)
+                    abs_error = torch.abs(state_value - expected_value).squeeze()
+                    _, indices = torch.sort(abs_error, descending=True)
+                    hard_indices = indices[0:batch_size]
+                    hard_state_value = state_value[hard_indices]
+                    hard_expected_value = expected_value[hard_indices]
+                    loss = F.mse_loss(hard_state_value, hard_expected_value)
+
                 loss.backward()
                 self.optimizer.step()
                 self.cur_bellman_err += loss.item()

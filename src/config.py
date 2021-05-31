@@ -1,1 +1,2 @@
-torch_device = "cuda:0"
+CUDA_VISIBLE_DEVICES = '0'
+torch_device = "cuda"

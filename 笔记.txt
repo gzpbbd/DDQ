@@ -227,3 +227,8 @@ user: _sample_goal ? _sample_action ?
 
 
 usersim_rule.py self.corrupt(self.state)
+
+
+运行时间：
+    5 agent，200 epoch，DDQ 大概需要1.8小时
+    5 agent，200 epoch，改进经验池采样 大概需要1.9小时

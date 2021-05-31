@@ -29,10 +29,17 @@ import os
 import logging
 import time
 import sys
+import torch
+import config
 
 
 def init_logging(filepath='./log/output.log'):
     # file handler
+    abs_path = os.path.abspath(filepath)
+    dir = os.path.dirname(abs_path)
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
     file_handler = logging.FileHandler(filepath, mode='w')
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(logging.Formatter(
@@ -40,8 +47,9 @@ def init_logging(filepath='./log/output.log'):
 
     # stream handle
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.ERROR)
-    console_handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(logging.Formatter("%(levelname)s %(asctime)s: %(message)s",
+                                                   datefmt='%H:%M:%S'))
 
     # setting logging
     logging.getLogger().setLevel(logging.DEBUG)
@@ -49,11 +57,10 @@ def init_logging(filepath='./log/output.log'):
     logging.getLogger().addHandler(console_handler)
 
 
+os.environ["CUDA_VISIBLE_DEVICES"] = config.CUDA_VISIBLE_DEVICES
 seed = 5
 numpy.random.seed(seed)
 random.seed(seed)
-
-import torch
 
 """ 
 Launch a dialog simulation per the command line arguments
@@ -67,8 +74,6 @@ if __name__ == "__main__":
     parser.add_argument('--dict_path', dest='dict_path', type=str,
                         default='./deep_dialog/data/dicts.v3.p',
                         help='path to the .json dictionary file')
-    parser.add_argument('--log_string', type=str, default='',
-                        help='the string appearing in log filename')
     parser.add_argument('--movie_kb_path', dest='movie_kb_path', type=str,
                         default='./deep_dialog/data/movie_kb.1k.p',
                         help='path to the movie kb .json file')
@@ -169,6 +174,12 @@ if __name__ == "__main__":
     parser.add_argument('--torch_seed', dest='torch_seed', type=int, default=100,
                         help='random seed for troch')
 
+    # improve DDQ
+    parser.add_argument('--log_string', type=str, default='',
+                        help='the string appearing in log filename')
+    parser.add_argument('--improve_replay_pool', type=bool, default=False,
+                        help="True: improve replay pool. False: do not.")
+
     args = parser.parse_args()
     params = vars(args)  # 返回args的属性名与属性值构成的字典
 
@@ -232,6 +243,7 @@ agent_params['predict_mode'] = params['predict_mode']
 agent_params['trained_model_path'] = params['trained_model_path']
 agent_params['warm_start'] = params['warm_start']
 agent_params['cmd_input_mode'] = params['cmd_input_mode']
+agent_params['improve_replay_pool'] = params['improve_replay_pool']
 
 # Manually set torch seed to ensure fail comparison.
 torch.manual_seed(params['torch_seed'])
@@ -271,7 +283,8 @@ usersim_params['learning_phase'] = params['learning_phase']
 usersim_params['hidden_size'] = params['dqn_hidden_size']
 
 if usr == 0:  # real user
-    user_sim = RealUser(movie_dictionary, act_set, slot_set, goal_set, usersim_params)
+    pass
+    # user_sim = RealUser(movie_dictionary, act_set, slot_set, goal_set, usersim_params)
 elif usr == 1:
     user_sim = RuleSimulator(movie_dictionary, act_set, slot_set, goal_set, usersim_params)
     world_model = ModelBasedSimulator(movie_dictionary, act_set, slot_set, goal_set, usersim_params)
@@ -364,10 +377,10 @@ def save_model(path, agent=None, filename=None, agt=None, success_rate=None, bes
     filepath = os.path.join(path, filename)
     try:
         agent.save(filepath)
-        logging.debug('saved model in %s' % (filepath,))
+        logging.info('saved model in %s' % (filepath,))
     except Exception, e:
-        logging.warn('Error: Writing model fails: %s' % (filepath,))
-        logging.warn(e)
+        logging.warning('Error: Writing model fails: %s' % (filepath,))
+        logging.warning(e)
 
 
 """ save performance numbers """
@@ -552,7 +565,7 @@ def run_episodes(count, status):
     '''
 
     :param count: number of episode
-    :param status: 
+    :param status:
     :return
     '''
     successes = 0
@@ -646,8 +659,6 @@ def run_episodes(count, status):
                 float(cumulative_reward) / (episode + 1),
                 float(cumulative_turns) / (episode + 1)))
 
-        logging.error("episode {}, time {}".format(episode, time.time() - start_time))
-
     logging.info("Success rate: %s / %s Avg reward: %.2f Avg turns: %.2f" % (
         successes, count, float(cumulative_reward) / count, float(cumulative_turns) / count))
     status['successes'] += successes
@@ -664,4 +675,4 @@ def run_episodes(count, status):
 
 start_time = time.time()
 run_episodes(num_episodes, status)
-logging.error("total time {}".format(time.time() - start_time))
+logging.info("total time {}".format(time.time() - start_time))
