@@ -26,19 +26,27 @@ def calculate_average_success_rate(result_dir, filename):
 
     epochs = average_success_rate.keys()
     average_rate = [average_success_rate[epoch] / len(all_result) for epoch in epochs]
-    return average_rate
+    return average_rate[:800]
 
 
 if __name__ == '__main__':
-    ddq_suc_rate = calculate_average_success_rate(result_dir='backup/result_improved_replay_pool--10_agent--500_epoches/ddq',
+    ddq = calculate_average_success_rate(result_dir='backup/baseline_ddq_k5_5_agent_800_epoches/',
                                                   filename='train_performance.json')
-    improved_suc_rate = calculate_average_success_rate(result_dir='backup/result_improved_replay_pool--10_agent--500_epoches/improve',
+    dqn = calculate_average_success_rate(result_dir='backup/baseline_dqn_k5_5_agent_800_epoches',
+                                                       filename='train_performance.json')
+    improve_k5 = calculate_average_success_rate(
+        result_dir='backup/DDQ_k5_change_pool_size_20aveturns_800_episodes',
+                                                       filename='train_performance.json')
+    improve_k1 = calculate_average_success_rate(
+        result_dir='backup/ddq_k1_change_pool_size_20aveturn_800_epoches',
                                                        filename='train_performance.json')
 
     # 画图
-    epochs = list(range(1, len(ddq_suc_rate) + 1))
-    pyplot.plot(epochs, ddq_suc_rate, label='DDQ')
-    pyplot.plot(epochs, improved_suc_rate, label='improved_DDQ')
+    epochs = list(range(1, len(ddq) + 1))
+    pyplot.plot(epochs, ddq, label='DDQ 5')
+    pyplot.plot(epochs, dqn, label='DQN 5')
+    pyplot.plot(epochs, improve_k5, label='change pool k5')
+    pyplot.plot(epochs, improve_k1, label='change pool k1')
     pyplot.xlabel('epochs')
     pyplot.ylabel('success rate')
     pyplot.legend()

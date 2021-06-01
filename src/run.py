@@ -401,10 +401,10 @@ def save_performance_records(path, filename, records):
     filepath = os.path.join(path, filename)
     try:
         json.dump(records, open(filepath, "wb"), indent=4)
-        logging.debug('saved performance in %s' % (filepath,))
+        logging.info('saved performance in %s' % (filepath,))
     except Exception, e:
-        logging.debug('Error: Writing performance fails: %s' % (filepath,))
-        logging.debug(e)
+        logging.error('Error: Writing performance fails: %s' % (filepath,))
+        logging.error(e)
 
 
 """ Run N simulation Dialogues """
@@ -434,9 +434,10 @@ def simulation_epoch(simulation_epoch_size):
             if episode_over:
                 if reward > 0:
                     successes += 1
-                    logging.debug("simulation episode %s : Success simulation_epoch" % (episode))
+                    # logging.debug("simulation episode %s : Success simulation_epoch" % (episode))
                 else:
-                    logging.debug("simulation episode %s : Fail simulation_epoch" % (episode))
+                    # logging.debug("simulation episode %s : Fail simulation_epoch" % (episode))
+                    pass
                 cumulative_turns += dialog_manager.state_tracker.turn_count
 
     res['success_rate'] = float(successes) / simulation_epoch_size
@@ -465,7 +466,6 @@ def simulation_epoch_for_training(simulation_epoch_size, grounded_for_model=Fals
 
     res = {}
     for episode in xrange(simulation_epoch_size):
-
         # 控制是否使用 world model
         if episode % simulation_epoch_size == 0:
             use_environment = True
@@ -486,11 +486,13 @@ def simulation_epoch_for_training(simulation_epoch_size, grounded_for_model=Fals
                     # logging.debug('---- episode_over \n{}'.format(json.dumps(
                     #     dialog_manager.state_tracker.history_dictionaries, indent=4)))
 
-                    logging.debug("simulation episode %s: Success simulation_epoch_for_training" % (
-                        episode))
+                    # logging.debug("simulation episode %s: Success simulation_epoch_for_training" % (
+                    #     episode))
+
                 else:
-                    logging.debug(
-                        "simulation episode %s: Fail simulation_epoch_for_training" % (episode))
+                    # logging.debug(
+                    #     "simulation episode %s: Fail simulation_epoch_for_training" % (episode))
+                    pass
                 cumulative_turns += dialog_manager.state_tracker.turn_count
 
     res['success_rate'] = float(successes) / simulation_epoch_size
@@ -525,9 +527,10 @@ def warm_start_simulation():
             if episode_over:
                 if reward > 0:
                     successes += 1
-                    logging.debug("warm_start simulation episode %s: Success" % (episode))
+                    # logging.debug("warm_start simulation episode %s: Success" % (episode))
                 else:
-                    logging.debug("warm_start simulation episode %s: Fail" % (episode))
+                    # logging.debug("warm_start simulation episode %s: Fail" % (episode))
+                    pass
                 cumulative_turns += dialog_manager.state_tracker.turn_count
 
         warm_start_run_epochs += 1
@@ -588,7 +591,7 @@ def run_episodes(count, status):
         start_time = time.time()
 
         # 完成一个 episode
-        logging.debug("Episode: %s" % (episode))
+        logging.debug("run_episodes Episode: %s" % (episode))
         agent.predict_mode = False  # 不为 agent 保存对话数据
         dialog_manager.initialize_episode(True)  # 使用 world model
         episode_over = False
@@ -599,10 +602,11 @@ def run_episodes(count, status):
 
             if episode_over:
                 if reward > 0:
-                    logging.debug("Successful Dialog!")
+                    # logging.debug("Successful Dialog!")
                     successes += 1
                 else:
-                    logging.debug("Failed Dialog!")
+                    # logging.debug("Failed Dialog!")
+                    pass
                 cumulative_turns += dialog_manager.state_tracker.turn_count
 
         # simulation
@@ -643,7 +647,16 @@ def run_episodes(count, status):
             if params['train_world_model']:
                 world_model.train(batch_size, 1)
 
-            logging.info(
+            logging.info("episode {}, len(agent.experience_replay_pool) {}, "
+                         "len(agent.experience_replay_pool_from_model) {}, "
+                         "len(world_model.training_examples) {}".format(episode,
+                                                                        len(
+                                                                            agent.experience_replay_pool),
+                                                                        len(
+                                                                            agent.experience_replay_pool_from_model),
+                                                                        len(
+                                                                            world_model.training_examples)))
+            logging.debug(
                 "episode {}: simulation 50 episodes, getting success_rate {}, ave_reward {}, ave_turns {}".format(
                     episode, simulation_res['success_rate'], simulation_res['ave_reward'],
                     simulation_res['ave_turns']))
@@ -653,7 +666,7 @@ def run_episodes(count, status):
             #                best_res['epoch'], episode)
             #     save_performance_records(params['write_model_dir'], agt, performance_records)
 
-        logging.info(
+        logging.debug(
             "Progress: %s / %s, Success rate: %s / %s Avg reward: %.2f Avg turns: %.2f" % (
                 episode + 1, count, successes, episode + 1,
                 float(cumulative_reward) / (episode + 1),

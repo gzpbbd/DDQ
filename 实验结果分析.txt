@@ -1,8 +1,23 @@
 1. 实验设置：只改进DDQ agent的经验池采样。（两倍采样，根据DDQ agent在样本上的损失由大到小取一半样本）
 baseline: DDQ
 配置：K=10，epoch=500，20个实验结果的平均精度
+结果备份：result_improved_replay_pool--10_agent--500_epoches
 实验结果：在前100轮可以看见效果提升，在后几百轮效果反而下降了
 
 原因分析：
     1.在后期，损失大的经验，可能是大部分来自于world model，而world model拟合real user有比较大的差异。
     2.replay pool更新比较慢，其中旧的经验占了很大部分，而旧经验损失大
+
+后续：
+    1. 经过观察，发现ddq对于user experiment pool 与 world model experiment pool大小都为5000，
+    但是user experiment pool每一轮只增加13条经验，而world model experiment pool每一轮增加60条经验。
+    world model experiment pool中经验几乎是user experiment pool的5倍，agent太依赖与world model的经验。
+    而由于agent性能的提高，world model的经验相对来说比user experiment pool劣质得多。故而导致后期模型效果下降。
+    2. 在pool中，在第300轮的时候，user experiment pool经验大概为3900条，这其中包括了很多老旧的经验，
+    可能不适合于当前的agent
+
+2. 实验设置：减小DDQ agent的经验池大小，并改进经验池采样（）
+baseline: DDQ 5, DQN 5
+配置：K=5，epoch=800，5次实验取平均精度
+结果备份：DDQ_k5_800episodes-change_pool_size-change_pool_sample
+实验结果：前200轮可以看见效果提升，后几百轮效果不如DDQ 5、DQN 5

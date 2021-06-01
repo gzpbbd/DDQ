@@ -54,10 +54,12 @@ class AgentDQN(Agent):
 
         self.experience_replay_pool_size = params.get('experience_replay_pool_size', 5000)
         # deque 双端队列
-        self.experience_replay_pool = deque(
-            maxlen=self.experience_replay_pool_size)  # experience replay pool <s_t, a_t, r_t, s_t+1>
-        self.experience_replay_pool_from_model = deque(
-            maxlen=self.experience_replay_pool_size)  # experience replay pool <s_t, a_t, r_t, s_t+1>
+        # self.experience_replay_pool = deque(
+        #     maxlen=self.experience_replay_pool_size)  # experience replay pool <s_t, a_t, r_t, s_t+1>
+        # self.experience_replay_pool_from_model = deque(
+        #     maxlen=self.experience_replay_pool_size)  # experience replay pool <s_t, a_t, r_t, s_t+1>
+        self.experience_replay_pool = deque(maxlen=420)
+        self.experience_replay_pool_from_model = deque(maxlen=1680)
         self.running_expereince_pool = None  # hold experience from both user and world model
 
         self.hidden_size = params.get('dqn_hidden_size', 60)
@@ -203,7 +205,7 @@ class AgentDQN(Agent):
             return random.randint(0, self.num_actions - 1)
         else:
             if self.warm_start == 1:
-                if len(self.experience_replay_pool) > self.experience_replay_pool_size: #
+                if len(self.experience_replay_pool) > self.experience_replay_pool_size:  #
                     # 因为pool为deque类型，且最大为experience_replay_pool_size，所以这个判断永远为false
                     self.warm_start = 2
                 return self.rule_policy()
@@ -296,7 +298,7 @@ class AgentDQN(Agent):
 
     def sample_from_buffer(self, batch_size):
         """Sample batch size examples from experience buffer and convert it to torch readable format"""
-        # type: (int, ) -> Transition
+        # type: # (int, ) -> Transition
 
         batch = [random.choice(self.running_expereince_pool) for i in xrange(batch_size)]
         np_batch = []
@@ -323,7 +325,7 @@ class AgentDQN(Agent):
         self.running_expereince_pool = list(self.experience_replay_pool) + list(
             self.experience_replay_pool_from_model)
 
-        for iter_batch in range(num_batches):
+        for iter_batch in range(num_batches * 3):
             for iter in range(len(self.running_expereince_pool) / (batch_size)):
                 self.optimizer.zero_grad()
 
