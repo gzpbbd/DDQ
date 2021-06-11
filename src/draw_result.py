@@ -26,28 +26,31 @@ def calculate_average_success_rate(result_dir, filename):
 
     epochs = average_success_rate.keys()
     average_rate = [average_success_rate[epoch] / len(all_result) for epoch in epochs]
-    return average_rate[:800]
+    return average_rate[:400]
 
 
-if __name__ == '__main__':
+def draw_figures(dirs):
     ddq = calculate_average_success_rate(result_dir='backup/baseline_ddq_k5_5_agent_800_epoches/',
-                                                  filename='train_performance.json')
+                                         filename='train_performance.json')
     dqn = calculate_average_success_rate(result_dir='backup/baseline_dqn_k5_5_agent_800_epoches',
-                                                       filename='train_performance.json')
-    improve_k5 = calculate_average_success_rate(
-        result_dir='backup/DDQ_k5_change_pool_size_20aveturns_800_episodes',
-                                                       filename='train_performance.json')
-    improve_k1 = calculate_average_success_rate(
-        result_dir='backup/ddq_k1_change_pool_size_20aveturn_800_epoches',
-                                                       filename='train_performance.json')
+                                         filename='train_performance.json')
 
     # 画图
     epochs = list(range(1, len(ddq) + 1))
     pyplot.plot(epochs, ddq, label='DDQ 5')
     pyplot.plot(epochs, dqn, label='DQN 5')
-    pyplot.plot(epochs, improve_k5, label='change pool k5')
-    pyplot.plot(epochs, improve_k1, label='change pool k1')
-    pyplot.xlabel('epochs')
+
+    for dir in dirs:
+        result = calculate_average_success_rate(
+            result_dir=os.path.join('backup', dir),
+            filename='train_performance.json')
+        pyplot.plot(epochs, result, label=dir)
+
+    pyplot.xlabel('episode')
     pyplot.ylabel('success rate')
     pyplot.legend()
     pyplot.show()
+
+
+if __name__ == '__main__':
+    draw_figures(['reduce_world_pool', 'reduce_world_pool-td_err_sample'])

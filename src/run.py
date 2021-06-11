@@ -31,6 +31,9 @@ import time
 import sys
 import torch
 import config
+from tqdm import tqdm
+
+start_time = time.time()
 
 
 def init_logging(filepath='./log/output.log'):
@@ -55,6 +58,24 @@ def init_logging(filepath='./log/output.log'):
     logging.getLogger().setLevel(logging.DEBUG)
     logging.getLogger().addHandler(file_handler)
     logging.getLogger().addHandler(console_handler)
+
+
+def backup_code(source_dir, target_dir):
+    import os
+    import fnmatch
+    from shutil import copyfile
+
+    for root, dirs, files in os.walk(source_dir):
+        # 只备份一级目录下的.py或者./deep_dialog下的.py，防止递归备份
+        if root != source_dir and root != os.path.join(source_dir, 'deep_dialog'):
+            continue
+
+        for filename in fnmatch.filter(files, '*.py'):
+            source_file = os.path.join(root, filename)
+            target_file = source_file.replace(source_dir, target_dir, 1)
+            if not os.path.exists(os.path.dirname(target_file)):
+                os.makedirs(os.path.dirname(target_file))
+            copyfile(source_file, target_file)
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = config.CUDA_VISIBLE_DEVICES
@@ -175,15 +196,22 @@ if __name__ == "__main__":
                         help='random seed for troch')
 
     # improve DDQ
-    parser.add_argument('--log_string', type=str, default='',
-                        help='the string appearing in log filename')
+    parser.add_argument('--agent_train_epochs', type=int, default=1,
+                        help="how many epochs agent train on its experience")
     parser.add_argument('--improve_replay_pool', type=bool, default=False,
                         help="True: improve replay pool. False: do not.")
+    parser.add_argument('--agent_pool_size_for_use_exp',
+                        type=int, default=5000,
+                        help='the size for experience replay pool of agent for user experience')
+    parser.add_argument('--agent_pool_size_for_wor_exp',
+                        type=int, default=5000,
+                        help='the size for experience replay pool of agent for world model '
+                             'experience')
 
     args = parser.parse_args()
     params = vars(args)  # 返回args的属性名与属性值构成的字典
 
-init_logging(filepath=params['log_string'])
+init_logging(filepath=os.path.join(params['write_model_dir'], 'run.log'))
 
 logging.debug('Dialog Parameters: ')
 logging.debug(json.dumps(params, indent=4))
@@ -261,7 +289,7 @@ elif agt == 4:
 elif agt == 5:
     agent = RequestBasicsAgent(movie_kb, act_set, slot_set, agent_params)
 elif agt == 9:
-    agent = AgentDQN(movie_kb, act_set, slot_set, agent_params)
+    agent = AgentDQN(movie_kb, act_set, slot_set, params)
 
 ################################################################################
 #    Add your agent here
@@ -587,8 +615,8 @@ def run_episodes(count, status):
         warm_start_simulation()
         logging.info('warm_start finished, start RL training ...')
 
-    for episode in xrange(count):
-        start_time = time.time()
+    for episode in tqdm(xrange(count), desc=params['write_model_dir'].split('/')[-1],
+                        mininterval=5):
 
         # 完成一个 episode
         logging.debug("run_episodes Episode: %s" % (episode))
@@ -641,7 +669,7 @@ def run_episodes(count, status):
                 best_res['ave_turns'] = simulation_res['ave_turns']
                 best_res['epoch'] = episode
 
-            agent.train(batch_size, 1)
+            agent.train(batch_size, params['agent_train_epochs'])
             agent.reset_dqn_target()
 
             if params['train_world_model']:
@@ -686,6 +714,10 @@ def run_episodes(count, status):
                                  performance_records)
 
 
-start_time = time.time()
 run_episodes(num_episodes, status)
-logging.info("total time {}".format(time.time() - start_time))
+backup_code('.', os.path.join(params['write_model_dir'], 'code'))
+logging.info('backup code to {}'.format(os.path.join(params['write_model_dir'], 'code')))
+
+total_time = int(time.time() - start_time)
+logging.info(
+    "total time {}:{}:{}".format(total_time // 3600, total_time % 3600 // 60, total_time % 60))

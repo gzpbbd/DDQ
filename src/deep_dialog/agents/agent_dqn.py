@@ -49,17 +49,23 @@ class AgentDQN(Agent):
         self.num_actions = len(self.feasible_actions)
 
         self.epsilon = params['epsilon']
-        self.agent_run_mode = params['agent_run_mode']
-        self.agent_act_level = params['agent_act_level']
+        self.agent_run_mode = params['run_mode']
+        self.agent_act_level = params['act_level']
 
-        self.experience_replay_pool_size = params.get('experience_replay_pool_size', 5000)
+        # self.experience_replay_pool_size = params.get('experience_replay_pool_size', 5000)
         # deque 双端队列
         # self.experience_replay_pool = deque(
         #     maxlen=self.experience_replay_pool_size)  # experience replay pool <s_t, a_t, r_t, s_t+1>
         # self.experience_replay_pool_from_model = deque(
         #     maxlen=self.experience_replay_pool_size)  # experience replay pool <s_t, a_t, r_t, s_t+1>
-        self.experience_replay_pool = deque(maxlen=420)
-        self.experience_replay_pool_from_model = deque(maxlen=1680)
+        # self.experience_replay_pool = deque(maxlen=420)
+        # self.experience_replay_pool_from_model = deque(maxlen=1680)
+        self.experience_replay_pool = deque(maxlen=params.get('agent_pool_size_for_use_exp'))
+        self.experience_replay_pool_from_model = deque(
+            maxlen=params.get('agent_pool_size_for_wor_exp'))
+        logging.debug('agent: experience_replay_pool.maxlen {}, '
+                      'experience_replay_pool_from_model.maxlen {}'.format(
+            self.experience_replay_pool.maxlen, self.experience_replay_pool_from_model.maxlen))
         self.running_expereince_pool = None  # hold experience from both user and world model
 
         self.hidden_size = params.get('dqn_hidden_size', 60)
@@ -205,9 +211,9 @@ class AgentDQN(Agent):
             return random.randint(0, self.num_actions - 1)
         else:
             if self.warm_start == 1:
-                if len(self.experience_replay_pool) > self.experience_replay_pool_size:  #
-                    # 因为pool为deque类型，且最大为experience_replay_pool_size，所以这个判断永远为false
-                    self.warm_start = 2
+                # if len(self.experience_replay_pool) > self.experience_replay_pool_size:  #
+                #     # 因为pool为deque类型，且最大为experience_replay_pool_size，所以这个判断永远为false
+                #     self.warm_start = 2
                 return self.rule_policy()
             else:
                 return self.DQN_policy(representation)
@@ -298,7 +304,7 @@ class AgentDQN(Agent):
 
     def sample_from_buffer(self, batch_size):
         """Sample batch size examples from experience buffer and convert it to torch readable format"""
-        # type: # (int, ) -> Transition
+        # type: (int, ) -> Transition
 
         batch = [random.choice(self.running_expereince_pool) for i in xrange(batch_size)]
         np_batch = []
@@ -309,6 +315,24 @@ class AgentDQN(Agent):
             np_batch.append(np.vstack(v))
 
         return Transition(*np_batch)
+
+    def state_and_expected_value(self, _batch):
+        state = torch.FloatTensor(_batch.state).to(self.device)
+        action = torch.tensor(_batch.action).to(self.device)
+        next_state = torch.FloatTensor(_batch.next_state).to(self.device)
+        reward = torch.FloatTensor(_batch.reward).to(self.device)
+        term = np.asarray(_batch.term, dtype=np.float32)
+        term = torch.FloatTensor(term).to(self.device)
+
+        # logging.error('state {}, action {}, next_state {}, reward {}, term {}'.format(state.shape,
+        #                                                                 action.shape, next_state.shape,
+        #                                                                reward.shape, term.shape))
+
+        _state_value = self.dqn(state).gather(1, action)
+        next_state_value, _ = self.target_dqn(next_state).max(1)
+        next_state_value = next_state_value.unsqueeze(1)
+        _expected_value = reward + self.gamma * next_state_value * (1 - term)
+        return _state_value, _expected_value
 
     def train(self, batch_size=1, num_batches=100):
         """
@@ -325,31 +349,19 @@ class AgentDQN(Agent):
         self.running_expereince_pool = list(self.experience_replay_pool) + list(
             self.experience_replay_pool_from_model)
 
-        for iter_batch in range(num_batches * 3):
-            for iter in range(len(self.running_expereince_pool) / (batch_size)):
+        logging.debug('agent train epochs {}'.format(num_batches))
+        for iter_batch in range(num_batches):
+            for iter in range(len(self.running_expereince_pool) // batch_size):
                 self.optimizer.zero_grad()
-
-                def state_and_expected_value(_batch):
-                    _state_value = self.dqn(torch.FloatTensor(_batch.state).to(self.device)).gather(
-                        1, torch.tensor(_batch.action).to(self.device))
-                    next_state_value, _ = self.target_dqn(torch.FloatTensor(_batch.next_state).to(
-                        self.device)).max(1)
-                    next_state_value = next_state_value.unsqueeze(1)
-                    term = np.asarray(_batch.term, dtype=np.float32)
-                    _expected_value = torch.FloatTensor(_batch.reward).to(
-                        self.device) + self.gamma * next_state_value * (
-                                              1 - torch.FloatTensor(term).to(self.device))
-                    return _state_value, _expected_value
-
-                # 改进经验池采样：先采样两倍batch_size的样本，再取误差最大的一批batch_size样本系列
 
                 if not self.improve_replay_pool:
                     batch = self.sample_from_buffer(batch_size)
-                    state_value, expected_value = state_and_expected_value(batch)
+                    state_value, expected_value = self.state_and_expected_value(batch)
                     loss = F.mse_loss(state_value, expected_value)
                 else:
+                    # 改进经验池采样：先采样两倍batch_size的样本，再取误差最大的一批batch_size样本系列
                     batch = self.sample_from_buffer(batch_size * 2)
-                    state_value, expected_value = state_and_expected_value(batch)
+                    state_value, expected_value = self.state_and_expected_value(batch)
                     abs_error = torch.abs(state_value - expected_value).squeeze()
                     _, indices = torch.sort(abs_error, descending=True)
                     hard_indices = indices[0:batch_size]
