@@ -207,6 +207,10 @@ if __name__ == "__main__":
                         type=int, default=5000,
                         help='the size for experience replay pool of agent for world model '
                              'experience')
+    parser.add_argument('--dqn_variant',
+                        type=str, default='dqn',
+                        help="which variant of dqn to be used. can just be one of 'dqn' or "
+                             "'double_dqn'")
 
     args = parser.parse_args()
     params = vars(args)  # 返回args的属性名与属性值构成的字典

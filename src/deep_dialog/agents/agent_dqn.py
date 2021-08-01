@@ -26,6 +26,7 @@ import torch.nn.functional as F
 import logging
 import time
 import config
+import copy
 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'term'))
 
@@ -39,6 +40,8 @@ class AgentDQN(Agent):
         :param slot_set: 可选的slot集合
         :param params: 配置参数
         '''
+        self.params = copy.deepcopy(params)
+
         self.movie_dict = movie_dict
         self.act_set = act_set  # dia_acts.txt得到的字典
         self.slot_set = slot_set  # slot_set.txt得到的字典
@@ -329,8 +332,19 @@ class AgentDQN(Agent):
         #                                                                reward.shape, term.shape))
 
         _state_value = self.dqn(state).gather(1, action)
-        next_state_value, _ = self.target_dqn(next_state).max(1)
-        next_state_value = next_state_value.unsqueeze(1)
+
+        # 更改 DQN -> Double DQN
+        if self.params['dqn_variant'] == 'dqn':
+            next_state_value, _ = self.target_dqn(next_state).max(1)
+            next_state_value = next_state_value.unsqueeze(1)
+        elif self.params['dqn_variant'] == 'double_dqn':
+            target_action = torch.argmax(self.dqn(next_state), dim=1).detach()
+            next_state_value = self.target_dqn(next_state).gather(1, target_action.view(-1, 1))
+        else:
+            raise Exception(
+                "parameter ddq_variant can just be one of 'dqn' or 'double_dqn'. '{}' isn't supported.".format(
+                    self.params['dqn_variant']))
+
         _expected_value = reward + self.gamma * next_state_value * (1 - term)
         return _state_value, _expected_value
 

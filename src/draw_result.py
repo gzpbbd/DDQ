@@ -4,6 +4,8 @@ import os
 import argparse
 import json
 from matplotlib import pyplot
+import seaborn as sns
+import pandas as pd
 
 
 def calculate_average_success_rate(result_dir, filename):
@@ -52,5 +54,53 @@ def draw_figures(dirs):
     pyplot.show()
 
 
+def read_file(dir, algorithm=None, filename='train_performance.json', data_dir='backup'):
+    dir = os.path.abspath(os.path.join(data_dir, dir))
+    print 'read data from dir: {}'.format(dir)
+    if not algorithm:
+        algorithm = dir
+    df = pd.DataFrame(
+        columns=['episode', 'success_rate', 'ave_turns', 'ave_reward', 'algorithm', 'sub_dir'])
+
+    print 'sub dir: {}'.format(os.listdir(dir))
+    for sub_dir in os.listdir(dir):
+        file_path = os.path.join(dir, sub_dir, filename)
+        with open(file_path, 'r') as f:
+            result = json.load(f)  # ave_reward,success_rate,ave_turns
+            result_dict = {'episode': [], 'success_rate': [], 'ave_turns': [], 'ave_reward': [],
+                           'algorithm': [], 'sub_dir': []}
+            for episode in result['success_rate'].keys():
+                success_rate = result['success_rate'][episode]
+                ave_turn = result['ave_turns'][episode]
+                ave_reward = result['ave_reward'][episode]
+
+                result_dict['episode'].append(int(episode))
+                result_dict['success_rate'].append(success_rate)
+                result_dict['ave_turns'].append(ave_turn)
+                result_dict['ave_reward'].append(ave_reward)
+                result_dict['algorithm'].append(algorithm)
+                result_dict['sub_dir'].append(sub_dir)
+
+            for key, data in result_dict.items():
+                result_dict[key] = data[:400]
+            sub_df = pd.DataFrame(result_dict)
+            df = df.append(sub_df)
+    return df
+
+
+def sns_draw_figure(dirs):
+    df = read_file('baseline_ddq_k5_5_agent_800_epoches/', algorithm='DDQ 5')
+    df = df.append(read_file('baseline_dqn_k5_5_agent_800_epoches/', algorithm='DQN 5'))
+
+    for dir in dirs:
+        df = df.append(read_file(dir=dir['dir'], algorithm=dir['algorithm']))
+
+    sns.lineplot(data=df, x='episode', y='success_rate', hue='algorithm')
+    pyplot.show()
+
+
 if __name__ == '__main__':
-    draw_figures(['reduce_world_pool', 'reduce_world_pool-td_err_sample'])
+    # draw_figures(['reduce_world_pool', 'double_dqn'])
+    dirs = [{'algorithm': 'double_dqn', 'dir': 'double_dqn'},
+            {'algorithm': 'reduce_world_pool', 'dir': 'reduce_world_pool'}]
+    sns_draw_figure(dirs)
