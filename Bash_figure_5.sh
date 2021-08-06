@@ -10,7 +10,7 @@ python run.py --agt 9 \
 --goal_file_path ./deep_dialog/data/user_goals_first_turn_template.part.movie.v1.p \
 --warm_start 1 --warm_start_epochs 100 \
 --write_model_dir ./deep_dialog/checkpoints/DQN_k10_run$i \
---planning_steps 9 --torch_seed $seed --grounded 1 --boosted 1 --train_world_model 1
+--planning_steps 9 --torch_seed $seed --K_DQN 1 --boosted 1 --train_world_model 1
 done
 
 ##DDQ 10
@@ -23,7 +23,7 @@ python run.py --agt 9 \
 --goal_file_path ./deep_dialog/data/user_goals_first_turn_template.part.movie.v1.p \
 --warm_start 1 --warm_start_epochs 100 \
 --write_model_dir ./deep_dialog/checkpoints/DDQ_k10_run$i \
---planning_steps 9 --torch_seed $seed --grounded 0 --boosted 1 --train_world_model 1
+--planning_steps 9 --torch_seed $seed --K_DQN 0 --boosted 1 --train_world_model 1
 done
 
 ##DDQ 10 rand-init
@@ -36,7 +36,7 @@ python run.py --agt 9 \
 --goal_file_path ./deep_dialog/data/user_goals_first_turn_template.part.movie.v1.p \
 --warm_start 1 --warm_start_epochs 100 \
 --write_model_dir ./deep_dialog/checkpoints/DDQ_k10_rand_run$i \
---planning_steps 9 --torch_seed $seed --grounded 0 --boosted 0 --train_world_model 1
+--planning_steps 9 --torch_seed $seed --K_DQN 0 --boosted 0 --train_world_model 1
 done
 
 ##DDQ 10 fixed, run 5 or 10 to smooth the results
@@ -49,5 +49,5 @@ python run.py --agt 9 \
 --goal_file_path ./deep_dialog/data/user_goals_first_turn_template.part.movie.v1.p \
 --warm_start 1 --warm_start_epochs 100 \
 --write_model_dir ./deep_dialog/checkpoints/DDQ_k10_fixed_run$i \
---planning_steps 9 --torch_seed $seed --grounded 0 --boosted 1 --train_world_model 0
+--planning_steps 9 --torch_seed $seed --K_DQN 0 --boosted 1 --train_world_model 0
 done

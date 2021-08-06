@@ -110,7 +110,7 @@ if __name__ == "__main__":
     parser.add_argument('--simulation_epoch_size', dest='simulation_epoch_size', type=int,
                         default=50,
                         help='the size of validation set')
-    # 0： 不预训练 world model。 1: 与 user 交互，预训练 world model。
+    # 0： 不预训练 world model。 1: 与 user 交互，预训练 world model。2 预训练 world model 结束
     parser.add_argument('--warm_start', dest='warm_start', type=int, default=1,
                         help='0: no warm start; 1: warm start for training')
     parser.add_argument('--warm_start_epochs', dest='warm_start_epochs', type=int, default=100,
@@ -119,7 +119,7 @@ if __name__ == "__main__":
                         help='the number of planning steps')
 
     parser.add_argument('--trained_model_path', dest='trained_model_path', type=str, default=None,
-                        help='the path for trained model')  # 如果已有模型，则不进行训练。如果没有模型，则进行训练
+                        help='the path for trained model')  # 如果已有DDQ模型，则不进行训练。如果没有模型，则进行训练
     parser.add_argument('-o', '--write_model_dir', dest='write_model_dir', type=str,
                         default='./deep_dialog/checkpoints/', help='write model to disk')
     parser.add_argument('--save_check_point', dest='save_check_point', type=int, default=10,
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     parser.add_argument('--learning_phase', dest='learning_phase', default='all', type=str,
                         help='train/test/all; default is all')
 
-    parser.add_argument('--grounded', dest='grounded', type=int, default=0,
+    parser.add_argument('--K_DQN', dest='K_DQN', type=int, default=0,
                         help='planning k steps with environment rather than world model')
     parser.add_argument('--boosted', dest='boosted', type=int, default=1,
                         help='Boost the world model')
@@ -333,7 +333,7 @@ def save_model(path, agt, success_rate, agent, best_epoch, cur_epoch):
     filepath = os.path.join(path, filename)
     try:
         agent.save(filepath)
-        print 'saved model in %s' % (filepath,)
+        # print 'saved model in %s' % (filepath,)
     except Exception, e:
         print 'Error: Writing model fails: %s' % (filepath,)
         print e
@@ -357,7 +357,7 @@ def save_performance_records(path, agt, records):
     filepath = os.path.join(path, filename)
     try:
         json.dump(records, open(filepath, "wb"))
-        print 'saved model in %s' % (filepath,)
+        # print 'saved model in %s' % (filepath,)
     except Exception, e:
         print 'Error: Writing model fails: %s' % (filepath,)
         print e
@@ -366,11 +366,11 @@ def save_performance_records(path, agt, records):
 """ Run N simulation Dialogues """
 
 
-def simulation_epoch(simulation_epoch_size):
+def computer_metrics(simulation_epoch_size):
     """
-    simulation_epoch、simulation_epoch_for_training 只在 initialize_episode 时传入的参数有区别
+    computer_metrics、simulation_epoch_for_training 只在 initialize episode 时传入的参数有区别
 
-    与 environment 交互 simulation_epoch_size 次。
+    agent 与 environment 交互 simulation_epoch_size 次。
     每次不为 world model 保存训练数据
 
     :param simulation_epoch_size: 执行多少个 episode
@@ -384,80 +384,66 @@ def simulation_epoch(simulation_epoch_size):
     for episode in xrange(simulation_epoch_size):
         dialog_manager.initialize_episode(use_environment=True)
         episode_over = False
+
         while (not episode_over):
-            episode_over, reward = dialog_manager.next_turn(record_training_data_for_user=False)
+            episode_over, reward = dialog_manager.next_turn(record_training_data=False,
+                                                            record_training_data_for_user=False)
             cumulative_reward += reward
             if episode_over:
-
-                # print('---- dialog_manager.user.goal \n{}'.format(json.dumps(
-                #     dialog_manager.user.goal,indent=4)))
-                # print('---- dialog_manager.user.state[\'history_slots\'] \n{}'.format(json.dumps(
-                #     dialog_manager.user.state['history_slots'],indent=4)))
                 if reward > 0:
                     successes += 1
-                    print ("simulation episode %s : Success simulation_epoch" % (episode))
-                else:
-                    print ("simulation episode %s : Fail simulation_epoch" % (episode))
                 cumulative_turns += dialog_manager.state_tracker.turn_count
 
     res['success_rate'] = float(successes) / simulation_epoch_size
     res['ave_reward'] = float(cumulative_reward) / simulation_epoch_size
     res['ave_turns'] = float(cumulative_turns) / simulation_epoch_size
-    print ("simulation success rate %s, ave reward %s, ave turns %s" % (
-        res['success_rate'], res['ave_reward'], res['ave_turns']))
     return res
 
 
-def simulation_epoch_for_training(simulation_epoch_size, grounded_for_model=False):
+def simulation_epoch_for_training(simulation_epoch_size, K_DQN=False):
     """
-    simulation_epoch、simulation_epoch_for_training 只在 initialize_episode 时传入的参数有区别
+    computer_metrics、simulation_epoch_for_training 只在 initialize episode 时传入的参数有区别
 
     执行 simulation_epoch_size 个 episode 的对话。第一个 episode 使用 environment 与 system 交互。
     其余 episode 使用 world model 与 system 交互。
     每次为 world model 保存训练数据
 
     :param simulation_epoch_size: 执行多少个 episode
-    :param grounded_for_model: 是否基于 world model
+    :param K_DQN: true- 全部使用 user simulator。false- DDQ。既只有第一轮使用 user simulator，其他轮使用 world model
     :return: 交互的指标。 字典 result。包含keys={'success_rate', 'ave_reward', 'ave_turns'}
     """
     successes = 0
     cumulative_reward = 0
     cumulative_turns = 0
 
-    res = {}
+    # res = {}
     for episode in xrange(simulation_epoch_size):
 
         # 控制是否使用 world model
-        if episode % simulation_epoch_size == 0:
+        if K_DQN or episode % simulation_epoch_size == 0:
             use_environment = True
         else:
             use_environment = False
 
-        # train 与 test 时 grounded_for_model 均为 0，所以可以忽略它
-        dialog_manager.initialize_episode(use_environment or grounded_for_model)
+        # train 与 test 时 K_DQN 均为 0，所以可以忽略它
+        dialog_manager.initialize_episode(use_environment)
 
         episode_over = False
         while (not episode_over):
-            episode_over, reward = dialog_manager.next_turn()
+            episode_over, reward = dialog_manager.next_turn(record_training_data=True,
+                                                            record_training_data_for_user=True)
             cumulative_reward += reward
             if episode_over:
                 if reward > 0:
                     successes += 1
-
-                    # print('---- episode_over \n{}'.format(json.dumps(
-                    #     dialog_manager.state_tracker.history_dictionaries, indent=4)))
-
-                    print ("simulation episode %s: Success simulation_epoch_for_training" % (episode))
-                else:
-                    print ("simulation episode %s: Fail simulation_epoch_for_training" % (episode))
                 cumulative_turns += dialog_manager.state_tracker.turn_count
 
-    res['success_rate'] = float(successes) / simulation_epoch_size
-    res['ave_reward'] = float(cumulative_reward) / simulation_epoch_size
-    res['ave_turns'] = float(cumulative_turns) / simulation_epoch_size
-    print ("simulation success rate %s, ave reward %s, ave turns %s" % (
-        res['success_rate'], res['ave_reward'], res['ave_turns']))
-    return res
+    # res['success_rate'] = float(successes) / simulation_epoch_size
+    # res['ave_reward'] = float(cumulative_reward) / simulation_epoch_size
+    # res['ave_turns'] = float(cumulative_turns) / simulation_epoch_size
+    # print ("simulation success rate %s, ave reward %s, ave turns %s" % (
+    #     res['success_rate'], res['ave_reward'], res['ave_turns']))
+    # return res
 
 
 """ Warm_Start Simulation (by Rule Policy) """
@@ -484,9 +470,6 @@ def warm_start_simulation():
             if episode_over:
                 if reward > 0:
                     successes += 1
-                    print ("warm_start simulation episode %s: Success" % (episode))
-                else:
-                    print ("warm_start simulation episode %s: Fail" % (episode))
                 cumulative_turns += dialog_manager.state_tracker.turn_count
 
         warm_start_run_epochs += 1
@@ -503,21 +486,9 @@ def warm_start_simulation():
     res['success_rate'] = float(successes) / warm_start_run_epochs
     res['ave_reward'] = float(cumulative_reward) / warm_start_run_epochs
     res['ave_turns'] = float(cumulative_turns) / warm_start_run_epochs
-    print ("Warm_Start %s epochs, success rate %s, ave reward %s, ave turns %s" % (
+    print ("warm starting done. %s epochs, success rate %s, ave reward %s, ave turns %s" % (
         episode + 1, res['success_rate'], res['ave_reward'], res['ave_turns']))
-    print ("Current experience replay buffer size %s" % (len(agent.experience_replay_pool)))
-
-
-def warm_start_simulation_preload():
-    agent.experience_replay_pool = cPickle.load(
-        open('warm_up_experience_pool_seed3081_r5.pkl', 'rb'))
-    world_model.training_examples = cPickle.load(
-        open('warm_up_experience_pool_seed3081_r5_user.pkl', 'rb'))
-    world_model.train(batch_size, 5)
-
-    agent.warm_start = 2
-
-    print ("Current experience replay buffer size %s" % (len(agent.experience_replay_pool)))
+    print ("    Current experience replay buffer size %s" % (len(agent.experience_replay_pool)))
 
 
 def run_episodes(count, status):
@@ -527,59 +498,31 @@ def run_episodes(count, status):
     :param status: 
     :return:
     '''
-    successes = 0
-    cumulative_reward = 0
-    cumulative_turns = 0
+    # successes = 0
+    # cumulative_reward = 0
+    # cumulative_turns = 0
 
-    grounded_for_model = params['grounded']
+    K_DQN = params['K_DQN']
     simulation_epoch_size = planning_steps + 1
 
     if agt == 9 and params['trained_model_path'] == None and warm_start == 1:
-        print ('warm_start starting ...')
+        print ('warm start starting ...')
         warm_start_simulation()
-        print ('warm_start finished, start RL training ...')
 
     for episode in xrange(count):
-        # 完成一个 episode
         print ("Episode: %s" % (episode))
-        agent.predict_mode = False  # predict mode 下不为 agent 保存对话数据
-        dialog_manager.initialize_episode(True)  # 使用 world model
-        episode_over = False
-
-        while not episode_over:
-            episode_over, reward = dialog_manager.next_turn(record_training_data_for_user=False)
-            cumulative_reward += reward
-
-            if episode_over:
-                if reward > 0:
-                    print ("Successful Dialog!")
-                    successes += 1
-                else:
-                    print ("Failed Dialog!")
-                cumulative_turns += dialog_manager.state_tracker.turn_count
 
         # simulation
         if agt == 9 and params['trained_model_path'] == None:
-            agent.predict_mode = True
-            world_model.predict_mode = True
-            # 运行 simulation_epoch_size 轮，第一轮使用 user，之后都是使用 world model
-            simulation_epoch_for_training(simulation_epoch_size, grounded_for_model)
+            # 运行 simulation_epoch_size 轮，第一轮使用 user，之后都是使用 world model，保存数据
+            simulation_epoch_for_training(simulation_epoch_size, K_DQN)
 
-            agent.predict_mode = False
-            world_model.predict_mode = False
-            # 运行 50 轮，全部使用 user，不使用 world model
-            simulation_res = simulation_epoch(50)
+            # 运行 50 轮，全部使用 user，不使用 world model，计算指标
+            simulation_res = computer_metrics(50)
 
             performance_records['success_rate'][episode] = simulation_res['success_rate']
             performance_records['ave_turns'][episode] = simulation_res['ave_turns']
             performance_records['ave_reward'][episode] = simulation_res['ave_reward']
-
-            if simulation_res['success_rate'] >= best_res['success_rate']:
-                if simulation_res['success_rate'] >= success_rate_threshold:  # threshold = 0.30
-                    agent.predict_mode = True
-                    world_model.predict_mode = True
-                    # 运行 simulation_epoch_size 轮，第一轮使用 user，之后都是使用 world model
-                    simulation_epoch_for_training(simulation_epoch_size, grounded_for_model)
 
             # 更新最好的指标
             if simulation_res['success_rate'] > best_res['success_rate']:
@@ -596,26 +539,31 @@ def run_episodes(count, status):
                 world_model.train(batch_size, 1)
 
             print (
-                        "Simulation success rate %s, Ave reward %s, Ave turns %s, Best success rate %s" % (
-                    performance_records['success_rate'][episode],
-                    performance_records['ave_reward'][episode],
-                    performance_records['ave_turns'][episode], best_res['success_rate']))
+                    "Running - Simulation success rate %s, Ave reward %s, Ave turns %s, "
+                    "Best success "
+                    "rate %s" % (
+                performance_records['success_rate'][episode],
+                performance_records['ave_reward'][episode],
+                performance_records['ave_turns'][episode], best_res['success_rate']))
             if episode % save_check_point == 0:  # and params['trained_model_path'] == None: # save the model every 10 episodes
                 save_model(params['write_model_dir'], agt, best_res['success_rate'],
                            best_model['model'],
                            best_res['epoch'], episode)
                 save_performance_records(params['write_model_dir'], agt, performance_records)
 
-        print("Progress: %s / %s, Success rate: %s / %s Avg reward: %.2f Avg turns: %.2f" % (
-            episode + 1, count, successes, episode + 1, float(cumulative_reward) / (episode + 1),
-            float(cumulative_turns) / (episode + 1)))
-    print("Success rate: %s / %s Avg reward: %.2f Avg turns: %.2f" % (
-        successes, count, float(cumulative_reward) / count, float(cumulative_turns) / count))
-    status['successes'] += successes
-    status['count'] += count
+    #     print("Progress: %s / %s, Success rate: %s / %s Avg reward: %.2f Avg turns: %.2f" % (
+    #         episode + 1, count, successes, episode + 1, float(cumulative_reward) / (episode + 1),
+    #         float(cumulative_turns) / (episode + 1)))
+    # print("Success rate: %s / %s Avg reward: %.2f Avg turns: %.2f" % (
+    #     successes, count, float(cumulative_reward) / count, float(cumulative_turns) / count))
+    # status['successes'] += successes
+    # status['count'] += count
 
     if agt == 9 and params['trained_model_path'] == None:
-        save_model(params['write_model_dir'], agt, float(successes) / count, best_model['model'],
+        # save_model(params['write_model_dir'], agt, float(successes) / count, best_model['model'],
+        #            best_res['epoch'],
+        #            count)
+        save_model(params['write_model_dir'], agt, 0, best_model['model'],
                    best_res['epoch'],
                    count)
         save_performance_records(params['write_model_dir'], agt, performance_records)

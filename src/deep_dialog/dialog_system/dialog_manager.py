@@ -92,8 +92,6 @@ class DialogManager:
         self.state = self.state_tracker.get_state_for_agent()
         self.agent_action = self.agent.state_to_action(self.state)
 
-        # print('---- agent_action \n{}'.format(json.dumps(self.agent_action, indent=4)))
-
         #   Register AGENT action with the state_tracker
         self.state_tracker.update(agent_action=self.agent_action)
 

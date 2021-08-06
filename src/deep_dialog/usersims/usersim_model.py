@@ -194,9 +194,9 @@ class ModelBasedSimulator(UserSimulator):
                 self.optimizer.step()
                 self.total_loss += loss.item()
 
-            print ("Total cost for user modeling: %.4f, training replay pool %s" % (
-                float(self.total_loss) / (float(len(self.training_examples)) / float(batch_size)),
-                len(self.training_examples)))
+            # print ("Total cost for user modeling: %.4f, training replay pool %s" % (
+            #     float(self.total_loss) / (float(len(self.training_examples)) / float(batch_size)),
+            #     len(self.training_examples)))
 
     def train_by_iter(self, batch_size=1, num_batches=1):
         """

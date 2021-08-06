@@ -4,21 +4,26 @@ Created on May 17, 2016
 @author: xiul, t-zalipt
 '''
 
-sys_inform_slots_for_user = ['city', 'closing', 'date', 'distanceconstraints', 'greeting', 'moviename',
-                             'numberofpeople', 'taskcomplete', 'price', 'starttime', 'state', 'theater',
+sys_inform_slots_for_user = ['city', 'closing', 'date', 'distanceconstraints', 'greeting',
+                             'moviename',
+                             'numberofpeople', 'taskcomplete', 'price', 'starttime', 'state',
+                             'theater',
                              'theater_chain', 'video_format', 'zip']
 
-sys_request_slots = ['moviename', 'theater', 'starttime', 'date', 'numberofpeople', 'state', 'city', 'zip',
-                       'distanceconstraints', 'video_format', 'theater_chain', 'price']
+sys_request_slots = ['moviename', 'theater', 'starttime', 'date', 'numberofpeople', 'state', 'city',
+                     'zip',
+                     'distanceconstraints', 'video_format', 'theater_chain', 'price']
 sys_inform_slots = ['moviename', 'theater', 'starttime', 'date', 'state', 'city', 'zip',
-                     'distanceconstraints', 'video_format', 'theater_chain', 'price', 'taskcomplete', 'ticket']
+                    'distanceconstraints', 'video_format', 'theater_chain', 'price', 'taskcomplete',
+                    'ticket']
 #
 # sys_request_slots = ['moviename', 'theater', 'starttime', 'date', 'numberofpeople', 'genre', 'state', 'city', 'zip', 'critic_rating', 'mpaa_rating', 'distanceconstraints', 'video_format', 'theater_chain', 'price', 'actor', 'description', 'numberofkids']
 # sys_inform_slots = ['moviename', 'theater', 'starttime', 'date', 'genre', 'state', 'city', 'zip', 'critic_rating', 'mpaa_rating', 'distanceconstraints', 'video_format', 'theater_chain', 'price', 'actor', 'description', 'numberofkids', 'taskcomplete', 'ticket']
 #
 start_dia_acts = {
     # 'greeting':[],
-    'request': ['moviename', 'starttime', 'theater', 'city', 'state', 'date', 'ticket', 'numberofpeople']
+    'request': ['moviename', 'starttime', 'theater', 'city', 'state', 'date', 'ticket',
+                'numberofpeople']
 }
 
 # sys_request_slots = ['moviename', 'theater', 'starttime', 'date', 'numberofpeople', 'genre', 'state', 'city', 'zip',
@@ -100,21 +105,27 @@ feasible_actions = [
 ############################################################################
 
 
-sys_inform_slots_for_user = ['city', 'closing', 'date', 'distanceconstraints', 'greeting', 'moviename',
-                             'numberofpeople', 'taskcomplete', 'price', 'starttime', 'state', 'theater',
-                             'theater_chain', 'video_format', 'zip', 'description','numberofkids','genre']
+sys_inform_slots_for_user = ['city', 'closing', 'date', 'distanceconstraints', 'greeting',
+                             'moviename',
+                             'numberofpeople', 'taskcomplete', 'price', 'starttime', 'state',
+                             'theater',
+                             'theater_chain', 'video_format', 'zip', 'description', 'numberofkids',
+                             'genre']
 
-sys_request_slots_for_user = ['city', 'date', 'moviename', 'numberofpeople', 'starttime', 'state', 'theater',
+sys_request_slots_for_user = ['city', 'date', 'moviename', 'numberofpeople', 'starttime', 'state',
+                              'theater',
                               'theater_chain', 'video_format', 'zip', 'ticket']
 
 for slot in sys_inform_slots:
-    feasible_actions.append({'diaact': 'inform', 'inform_slots': {slot: "PLACEHOLDER"}, 'request_slots': {}})
+    feasible_actions.append(
+        {'diaact': 'inform', 'inform_slots': {slot: "PLACEHOLDER"}, 'request_slots': {}})
 
 ############################################################################
 #   Adding the request actions
 ############################################################################
 for slot in sys_request_slots:
-    feasible_actions.append({'diaact': 'request', 'inform_slots': {}, 'request_slots': {slot: "UNK"}})
+    feasible_actions.append(
+        {'diaact': 'request', 'inform_slots': {}, 'request_slots': {slot: "UNK"}})
 
 feasible_actions_users = [
     {'diaact': "thanks", 'inform_slots': {}, 'request_slots': {}},
@@ -125,7 +136,9 @@ feasible_actions_users = [
 
 # for slot in sys_inform_slots_for_user:
 for slot in sys_inform_slots_for_user:
-    feasible_actions_users.append({'diaact': 'inform', 'inform_slots': {slot: "PLACEHOLDER"}, 'request_slots': {}})
+    feasible_actions_users.append(
+        {'diaact': 'inform', 'inform_slots': {slot: "PLACEHOLDER"}, 'request_slots': {}})
+
 
 feasible_actions_users.append(
     {'diaact': 'inform', 'inform_slots': {'numberofpeople': "PLACEHOLDER"}, 'request_slots': {}})
@@ -134,6 +147,7 @@ feasible_actions_users.append(
 #   Adding the request actions
 ############################################################################
 for slot in sys_request_slots_for_user:
-    feasible_actions_users.append({'diaact': 'request', 'inform_slots': {}, 'request_slots': {slot: "UNK"}})
+    feasible_actions_users.append(
+        {'diaact': 'request', 'inform_slots': {}, 'request_slots': {slot: "UNK"}})
 
 feasible_actions_users.append({'diaact': 'inform', 'inform_slots': {}, 'request_slots': {}})
