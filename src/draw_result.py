@@ -30,9 +30,9 @@ def calculate_average_success_rate(result_dir, filename):
 
 
 def draw_figures(dirs):
-    ddq = calculate_average_success_rate(result_dir='backup/baseline_ddq_k5_5_agent_800_epoches/',
+    ddq = calculate_average_success_rate(result_dir='baseline/baseline_ddq_k5_5_agent_800_epoches/',
                                          filename='train_performance.json')
-    dqn = calculate_average_success_rate(result_dir='backup/baseline_dqn_k5_5_agent_800_epoches',
+    dqn = calculate_average_success_rate(result_dir='baseline/baseline_dqn_k5_5_agent_800_epoches',
                                          filename='train_performance.json')
 
     # 画图
@@ -42,7 +42,7 @@ def draw_figures(dirs):
 
     for dir in dirs:
         result = calculate_average_success_rate(
-            result_dir=os.path.join('backup', dir),
+            result_dir=os.path.join('result', dir),
             filename='train_performance.json')
         pyplot.plot(epochs, result, label=dir)
 
@@ -53,4 +53,4 @@ def draw_figures(dirs):
 
 
 if __name__ == '__main__':
-    draw_figures(['reduce_world_pool', 'double_dqn'])
+    draw_figures(['double_dqn-reduce_pool', 'double_dqn', 'reduce_world_pool'])
