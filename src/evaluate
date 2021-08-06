@@ -1,0 +1,1252 @@
+Dialog Parameters: 
+                       - DEBUG 2021-06-06 19:12:42,655 run.py(<module> 188)
+{
+    "simulation_epoch_size": 100, 
+    "slot_err_mode": 0, 
+    "log_string": "evaluate", 
+    "diaact_nl_pairs": "./deep_dialog/data/dia_act_nl_pairs.v6.json", 
+    "save_check_point": 10, 
+    "episodes": 300, 
+    "predict_mode": false, 
+    "planning_steps": 4, 
+    "cmd_input_mode": 0, 
+    "goal_file_path": "./deep_dialog/data/user_goals_first_turn_template.part.movie.v1.p", 
+    "max_turn": 40, 
+    "grounded": 0, 
+    "experience_replay_pool_size": 1000, 
+    "write_model_dir": "./result/", 
+    "usr": 1, 
+    "boosted": 1, 
+    "auto_suggest": 0, 
+    "torch_seed": 100, 
+    "run_mode": 3, 
+    "trained_model_path": "./result/agt_best.pkl", 
+    "success_rate_threshold": 0.6, 
+    "nlu_model_path": "./deep_dialog/models/nlu/lstm_[1468447442.91]_39_80_0.921.p", 
+    "train_world_model": 1, 
+    "epsilon": 0, 
+    "improve_replay_pool": false, 
+    "batch_size": 16, 
+    "learning_phase": "all", 
+    "nlg_model_path": "./deep_dialog/models/nlg/lstm_tanh_relu_[1468202263.38]_2_0.610.p", 
+    "act_set": "./deep_dialog/data/dia_acts.txt", 
+    "movie_kb_path": "./deep_dialog/data/movie_kb.1k.p", 
+    "slot_err_prob": 0.0, 
+    "warm_start": 1, 
+    "warm_start_epochs": 100, 
+    "dict_path": "./deep_dialog/data/dicts.v3.p", 
+    "intent_err_prob": 0.0, 
+    "slot_set": "./deep_dialog/data/slot_set.txt", 
+    "act_level": 0, 
+    "dqn_hidden_size": 80, 
+    "agt": 9, 
+    "split_fold": 5, 
+    "gamma": 0.9
+}
+                       - DEBUG 2021-06-06 19:12:42,668 run.py(<module> 189)
+run_episodes Episode: 0
+                       - DEBUG 2021-06-06 19:12:45,211 run.py(run_episodes 594)
+Progress: 1 / 300, Success rate: 0 / 1 Avg reward: -60.00 Avg turns: 42.00
+                       - DEBUG 2021-06-06 19:12:45,401 run.py(run_episodes 673)
+run_episodes Episode: 1
+                       - DEBUG 2021-06-06 19:12:45,401 run.py(run_episodes 594)
+Progress: 2 / 300, Success rate: 1 / 2 Avg reward: 6.50 Avg turns: 29.00
+                       - DEBUG 2021-06-06 19:12:45,423 run.py(run_episodes 673)
+run_episodes Episode: 2
+                       - DEBUG 2021-06-06 19:12:45,423 run.py(run_episodes 594)
+Progress: 3 / 300, Success rate: 2 / 3 Avg reward: 28.67 Avg turns: 24.67
+                       - DEBUG 2021-06-06 19:12:45,448 run.py(run_episodes 673)
+run_episodes Episode: 3
+                       - DEBUG 2021-06-06 19:12:45,448 run.py(run_episodes 594)
+Progress: 4 / 300, Success rate: 2 / 4 Avg reward: 6.50 Avg turns: 29.00
+                       - DEBUG 2021-06-06 19:12:45,589 run.py(run_episodes 673)
+run_episodes Episode: 4
+                       - DEBUG 2021-06-06 19:12:45,589 run.py(run_episodes 594)
+Progress: 5 / 300, Success rate: 3 / 5 Avg reward: 19.80 Avg turns: 26.40
+                       - DEBUG 2021-06-06 19:12:45,612 run.py(run_episodes 673)
+run_episodes Episode: 5
+                       - DEBUG 2021-06-06 19:12:45,613 run.py(run_episodes 594)
+Progress: 6 / 300, Success rate: 3 / 6 Avg reward: 8.67 Avg turns: 24.67
+                       - DEBUG 2021-06-06 19:12:45,637 run.py(run_episodes 673)
+run_episodes Episode: 6
+                       - DEBUG 2021-06-06 19:12:45,637 run.py(run_episodes 594)
+Progress: 7 / 300, Success rate: 3 / 7 Avg reward: -0.57 Avg turns: 26.00
+                       - DEBUG 2021-06-06 19:12:46,089 run.py(run_episodes 673)
+run_episodes Episode: 7
+                       - DEBUG 2021-06-06 19:12:46,089 run.py(run_episodes 594)
+Progress: 8 / 300, Success rate: 3 / 8 Avg reward: -8.00 Avg turns: 28.00
+                       - DEBUG 2021-06-06 19:12:46,364 run.py(run_episodes 673)
+run_episodes Episode: 8
+                       - DEBUG 2021-06-06 19:12:46,364 run.py(run_episodes 594)
+Progress: 9 / 300, Success rate: 4 / 9 Avg reward: 0.78 Avg turns: 27.11
+                       - DEBUG 2021-06-06 19:12:46,391 run.py(run_episodes 673)
+run_episodes Episode: 9
+                       - DEBUG 2021-06-06 19:12:46,391 run.py(run_episodes 594)
+Progress: 10 / 300, Success rate: 4 / 10 Avg reward: -5.30 Avg turns: 28.60
+                       - DEBUG 2021-06-06 19:12:46,437 run.py(run_episodes 673)
+run_episodes Episode: 10
+                       - DEBUG 2021-06-06 19:12:46,437 run.py(run_episodes 594)
+Progress: 11 / 300, Success rate: 5 / 11 Avg reward: 1.64 Avg turns: 27.82
+                       - DEBUG 2021-06-06 19:12:46,515 run.py(run_episodes 673)
+run_episodes Episode: 11
+                       - DEBUG 2021-06-06 19:12:46,515 run.py(run_episodes 594)
+Progress: 12 / 300, Success rate: 6 / 12 Avg reward: 7.42 Avg turns: 27.17
+                       - DEBUG 2021-06-06 19:12:46,539 run.py(run_episodes 673)
+run_episodes Episode: 12
+                       - DEBUG 2021-06-06 19:12:46,539 run.py(run_episodes 594)
+Progress: 13 / 300, Success rate: 7 / 13 Avg reward: 12.46 Avg turns: 26.31
+                       - DEBUG 2021-06-06 19:12:46,553 run.py(run_episodes 673)
+run_episodes Episode: 13
+                       - DEBUG 2021-06-06 19:12:46,553 run.py(run_episodes 594)
+Progress: 14 / 300, Success rate: 7 / 14 Avg reward: 7.29 Avg turns: 27.43
+                       - DEBUG 2021-06-06 19:12:46,737 run.py(run_episodes 673)
+run_episodes Episode: 14
+                       - DEBUG 2021-06-06 19:12:46,737 run.py(run_episodes 594)
+Progress: 15 / 300, Success rate: 8 / 15 Avg reward: 11.67 Avg turns: 26.67
+                       - DEBUG 2021-06-06 19:12:46,756 run.py(run_episodes 673)
+run_episodes Episode: 15
+                       - DEBUG 2021-06-06 19:12:46,756 run.py(run_episodes 594)
+Progress: 16 / 300, Success rate: 9 / 16 Avg reward: 15.50 Avg turns: 26.00
+                       - DEBUG 2021-06-06 19:12:46,778 run.py(run_episodes 673)
+run_episodes Episode: 16
+                       - DEBUG 2021-06-06 19:12:46,778 run.py(run_episodes 594)
+Progress: 17 / 300, Success rate: 10 / 17 Avg reward: 18.88 Avg turns: 25.41
+                       - DEBUG 2021-06-06 19:12:46,803 run.py(run_episodes 673)
+run_episodes Episode: 17
+                       - DEBUG 2021-06-06 19:12:46,803 run.py(run_episodes 594)
+Progress: 18 / 300, Success rate: 11 / 18 Avg reward: 21.89 Avg turns: 24.89
+                       - DEBUG 2021-06-06 19:12:46,816 run.py(run_episodes 673)
+run_episodes Episode: 18
+                       - DEBUG 2021-06-06 19:12:46,816 run.py(run_episodes 594)
+Progress: 19 / 300, Success rate: 11 / 19 Avg reward: 17.68 Avg turns: 25.58
+                       - DEBUG 2021-06-06 19:12:46,902 run.py(run_episodes 673)
+run_episodes Episode: 19
+                       - DEBUG 2021-06-06 19:12:46,902 run.py(run_episodes 594)
+Progress: 20 / 300, Success rate: 12 / 20 Avg reward: 20.45 Avg turns: 25.10
+                       - DEBUG 2021-06-06 19:12:46,919 run.py(run_episodes 673)
+run_episodes Episode: 20
+                       - DEBUG 2021-06-06 19:12:46,919 run.py(run_episodes 594)
+Progress: 21 / 300, Success rate: 13 / 21 Avg reward: 22.86 Avg turns: 24.86
+                       - DEBUG 2021-06-06 19:12:46,942 run.py(run_episodes 673)
+run_episodes Episode: 21
+                       - DEBUG 2021-06-06 19:12:46,943 run.py(run_episodes 594)
+Progress: 22 / 300, Success rate: 14 / 22 Avg reward: 25.14 Avg turns: 24.45
+                       - DEBUG 2021-06-06 19:12:46,952 run.py(run_episodes 673)
+run_episodes Episode: 22
+                       - DEBUG 2021-06-06 19:12:46,952 run.py(run_episodes 594)
+Progress: 23 / 300, Success rate: 15 / 23 Avg reward: 27.22 Avg turns: 24.09
+                       - DEBUG 2021-06-06 19:12:46,993 run.py(run_episodes 673)
+run_episodes Episode: 23
+                       - DEBUG 2021-06-06 19:12:46,993 run.py(run_episodes 594)
+Progress: 24 / 300, Success rate: 16 / 24 Avg reward: 29.12 Avg turns: 23.75
+                       - DEBUG 2021-06-06 19:12:47,054 run.py(run_episodes 673)
+run_episodes Episode: 24
+                       - DEBUG 2021-06-06 19:12:47,054 run.py(run_episodes 594)
+Progress: 25 / 300, Success rate: 16 / 25 Avg reward: 25.56 Avg turns: 24.48
+                       - DEBUG 2021-06-06 19:12:47,226 run.py(run_episodes 673)
+run_episodes Episode: 25
+                       - DEBUG 2021-06-06 19:12:47,226 run.py(run_episodes 594)
+Progress: 26 / 300, Success rate: 16 / 26 Avg reward: 22.27 Avg turns: 25.15
+                       - DEBUG 2021-06-06 19:12:47,373 run.py(run_episodes 673)
+run_episodes Episode: 26
+                       - DEBUG 2021-06-06 19:12:47,373 run.py(run_episodes 594)
+Progress: 27 / 300, Success rate: 17 / 27 Avg reward: 24.15 Avg turns: 24.81
+                       - DEBUG 2021-06-06 19:12:47,394 run.py(run_episodes 673)
+run_episodes Episode: 27
+                       - DEBUG 2021-06-06 19:12:47,394 run.py(run_episodes 594)
+Progress: 28 / 300, Success rate: 17 / 28 Avg reward: 21.14 Avg turns: 25.43
+                       - DEBUG 2021-06-06 19:12:47,591 run.py(run_episodes 673)
+run_episodes Episode: 28
+                       - DEBUG 2021-06-06 19:12:47,591 run.py(run_episodes 594)
+Progress: 29 / 300, Success rate: 17 / 29 Avg reward: 18.34 Avg turns: 26.00
+                       - DEBUG 2021-06-06 19:12:47,634 run.py(run_episodes 673)
+run_episodes Episode: 29
+                       - DEBUG 2021-06-06 19:12:47,634 run.py(run_episodes 594)
+Progress: 30 / 300, Success rate: 17 / 30 Avg reward: 15.73 Avg turns: 26.53
+                       - DEBUG 2021-06-06 19:12:47,847 run.py(run_episodes 673)
+run_episodes Episode: 30
+                       - DEBUG 2021-06-06 19:12:47,847 run.py(run_episodes 594)
+Progress: 31 / 300, Success rate: 18 / 31 Avg reward: 17.58 Avg turns: 26.19
+                       - DEBUG 2021-06-06 19:12:47,872 run.py(run_episodes 673)
+run_episodes Episode: 31
+                       - DEBUG 2021-06-06 19:12:47,872 run.py(run_episodes 594)
+Progress: 32 / 300, Success rate: 18 / 32 Avg reward: 15.16 Avg turns: 26.69
+                       - DEBUG 2021-06-06 19:12:48,023 run.py(run_episodes 673)
+run_episodes Episode: 32
+                       - DEBUG 2021-06-06 19:12:48,023 run.py(run_episodes 594)
+Progress: 33 / 300, Success rate: 19 / 33 Avg reward: 16.85 Avg turns: 26.48
+                       - DEBUG 2021-06-06 19:12:48,052 run.py(run_episodes 673)
+run_episodes Episode: 33
+                       - DEBUG 2021-06-06 19:12:48,052 run.py(run_episodes 594)
+Progress: 34 / 300, Success rate: 20 / 34 Avg reward: 18.50 Avg turns: 26.18
+                       - DEBUG 2021-06-06 19:12:48,070 run.py(run_episodes 673)
+run_episodes Episode: 34
+                       - DEBUG 2021-06-06 19:12:48,070 run.py(run_episodes 594)
+Progress: 35 / 300, Success rate: 21 / 35 Avg reward: 20.06 Avg turns: 25.89
+                       - DEBUG 2021-06-06 19:12:48,076 run.py(run_episodes 673)
+run_episodes Episode: 35
+                       - DEBUG 2021-06-06 19:12:48,076 run.py(run_episodes 594)
+Progress: 36 / 300, Success rate: 21 / 36 Avg reward: 18.19 Avg turns: 25.61
+                       - DEBUG 2021-06-06 19:12:48,097 run.py(run_episodes 673)
+run_episodes Episode: 36
+                       - DEBUG 2021-06-06 19:12:48,097 run.py(run_episodes 594)
+Progress: 37 / 300, Success rate: 21 / 37 Avg reward: 16.43 Avg turns: 25.35
+                       - DEBUG 2021-06-06 19:12:48,128 run.py(run_episodes 673)
+run_episodes Episode: 37
+                       - DEBUG 2021-06-06 19:12:48,128 run.py(run_episodes 594)
+Progress: 38 / 300, Success rate: 21 / 38 Avg reward: 14.42 Avg turns: 25.79
+                       - DEBUG 2021-06-06 19:12:48,279 run.py(run_episodes 673)
+run_episodes Episode: 38
+                       - DEBUG 2021-06-06 19:12:48,279 run.py(run_episodes 594)
+Progress: 39 / 300, Success rate: 22 / 39 Avg reward: 15.92 Avg turns: 25.54
+                       - DEBUG 2021-06-06 19:12:48,303 run.py(run_episodes 673)
+run_episodes Episode: 39
+                       - DEBUG 2021-06-06 19:12:48,303 run.py(run_episodes 594)
+Progress: 40 / 300, Success rate: 23 / 40 Avg reward: 17.35 Avg turns: 25.30
+                       - DEBUG 2021-06-06 19:12:48,309 run.py(run_episodes 673)
+run_episodes Episode: 40
+                       - DEBUG 2021-06-06 19:12:48,310 run.py(run_episodes 594)
+Progress: 41 / 300, Success rate: 23 / 41 Avg reward: 15.46 Avg turns: 25.71
+                       - DEBUG 2021-06-06 19:12:48,349 run.py(run_episodes 673)
+run_episodes Episode: 41
+                       - DEBUG 2021-06-06 19:12:48,349 run.py(run_episodes 594)
+Progress: 42 / 300, Success rate: 24 / 42 Avg reward: 16.83 Avg turns: 25.48
+                       - DEBUG 2021-06-06 19:12:48,366 run.py(run_episodes 673)
+run_episodes Episode: 42
+                       - DEBUG 2021-06-06 19:12:48,366 run.py(run_episodes 594)
+Progress: 43 / 300, Success rate: 25 / 43 Avg reward: 18.14 Avg turns: 25.26
+                       - DEBUG 2021-06-06 19:12:48,388 run.py(run_episodes 673)
+run_episodes Episode: 43
+                       - DEBUG 2021-06-06 19:12:48,388 run.py(run_episodes 594)
+Progress: 44 / 300, Success rate: 25 / 44 Avg reward: 16.36 Avg turns: 25.64
+                       - DEBUG 2021-06-06 19:12:48,457 run.py(run_episodes 673)
+run_episodes Episode: 44
+                       - DEBUG 2021-06-06 19:12:48,457 run.py(run_episodes 594)
+Progress: 45 / 300, Success rate: 26 / 45 Avg reward: 17.62 Avg turns: 25.42
+                       - DEBUG 2021-06-06 19:12:48,486 run.py(run_episodes 673)
+run_episodes Episode: 45
+                       - DEBUG 2021-06-06 19:12:48,487 run.py(run_episodes 594)
+Progress: 46 / 300, Success rate: 27 / 46 Avg reward: 18.83 Avg turns: 25.22
+                       - DEBUG 2021-06-06 19:12:48,510 run.py(run_episodes 673)
+run_episodes Episode: 46
+                       - DEBUG 2021-06-06 19:12:48,510 run.py(run_episodes 594)
+Progress: 47 / 300, Success rate: 27 / 47 Avg reward: 17.43 Avg turns: 25.02
+                       - DEBUG 2021-06-06 19:12:48,531 run.py(run_episodes 673)
+run_episodes Episode: 47
+                       - DEBUG 2021-06-06 19:12:48,531 run.py(run_episodes 594)
+Progress: 48 / 300, Success rate: 27 / 48 Avg reward: 16.08 Avg turns: 24.83
+                       - DEBUG 2021-06-06 19:12:48,556 run.py(run_episodes 673)
+run_episodes Episode: 48
+                       - DEBUG 2021-06-06 19:12:48,556 run.py(run_episodes 594)
+Progress: 49 / 300, Success rate: 28 / 49 Avg reward: 17.24 Avg turns: 24.65
+                       - DEBUG 2021-06-06 19:12:48,562 run.py(run_episodes 673)
+run_episodes Episode: 49
+                       - DEBUG 2021-06-06 19:12:48,562 run.py(run_episodes 594)
+Progress: 50 / 300, Success rate: 29 / 50 Avg reward: 18.36 Avg turns: 24.48
+                       - DEBUG 2021-06-06 19:12:48,576 run.py(run_episodes 673)
+run_episodes Episode: 50
+                       - DEBUG 2021-06-06 19:12:48,576 run.py(run_episodes 594)
+Progress: 51 / 300, Success rate: 29 / 51 Avg reward: 17.08 Avg turns: 24.31
+                       - DEBUG 2021-06-06 19:12:48,600 run.py(run_episodes 673)
+run_episodes Episode: 51
+                       - DEBUG 2021-06-06 19:12:48,600 run.py(run_episodes 594)
+Progress: 52 / 300, Success rate: 29 / 52 Avg reward: 15.60 Avg turns: 24.65
+                       - DEBUG 2021-06-06 19:12:48,693 run.py(run_episodes 673)
+run_episodes Episode: 52
+                       - DEBUG 2021-06-06 19:12:48,693 run.py(run_episodes 594)
+Progress: 53 / 300, Success rate: 30 / 53 Avg reward: 16.68 Avg turns: 24.49
+                       - DEBUG 2021-06-06 19:12:48,709 run.py(run_episodes 673)
+run_episodes Episode: 53
+                       - DEBUG 2021-06-06 19:12:48,709 run.py(run_episodes 594)
+Progress: 54 / 300, Success rate: 31 / 54 Avg reward: 17.57 Avg turns: 24.63
+                       - DEBUG 2021-06-06 19:12:48,737 run.py(run_episodes 673)
+run_episodes Episode: 54
+                       - DEBUG 2021-06-06 19:12:48,737 run.py(run_episodes 594)
+Progress: 55 / 300, Success rate: 32 / 55 Avg reward: 18.58 Avg turns: 24.47
+                       - DEBUG 2021-06-06 19:12:48,755 run.py(run_episodes 673)
+run_episodes Episode: 55
+                       - DEBUG 2021-06-06 19:12:48,755 run.py(run_episodes 594)
+Progress: 56 / 300, Success rate: 33 / 56 Avg reward: 19.52 Avg turns: 24.39
+                       - DEBUG 2021-06-06 19:12:48,783 run.py(run_episodes 673)
+run_episodes Episode: 56
+                       - DEBUG 2021-06-06 19:12:48,783 run.py(run_episodes 594)
+Progress: 57 / 300, Success rate: 34 / 57 Avg reward: 20.30 Avg turns: 24.56
+                       - DEBUG 2021-06-06 19:12:48,818 run.py(run_episodes 673)
+run_episodes Episode: 57
+                       - DEBUG 2021-06-06 19:12:48,818 run.py(run_episodes 594)
+Progress: 58 / 300, Success rate: 34 / 58 Avg reward: 18.91 Avg turns: 24.86
+                       - DEBUG 2021-06-06 19:12:48,960 run.py(run_episodes 673)
+run_episodes Episode: 58
+                       - DEBUG 2021-06-06 19:12:48,960 run.py(run_episodes 594)
+Progress: 59 / 300, Success rate: 34 / 59 Avg reward: 17.58 Avg turns: 25.15
+                       - DEBUG 2021-06-06 19:12:49,101 run.py(run_episodes 673)
+run_episodes Episode: 59
+                       - DEBUG 2021-06-06 19:12:49,101 run.py(run_episodes 594)
+Progress: 60 / 300, Success rate: 34 / 60 Avg reward: 16.28 Avg turns: 25.43
+                       - DEBUG 2021-06-06 19:12:49,290 run.py(run_episodes 673)
+run_episodes Episode: 60
+                       - DEBUG 2021-06-06 19:12:49,291 run.py(run_episodes 594)
+Progress: 61 / 300, Success rate: 34 / 61 Avg reward: 15.03 Avg turns: 25.70
+                       - DEBUG 2021-06-06 19:12:49,686 run.py(run_episodes 673)
+run_episodes Episode: 61
+                       - DEBUG 2021-06-06 19:12:49,686 run.py(run_episodes 594)
+Progress: 62 / 300, Success rate: 34 / 62 Avg reward: 14.03 Avg turns: 25.55
+                       - DEBUG 2021-06-06 19:12:49,711 run.py(run_episodes 673)
+run_episodes Episode: 62
+                       - DEBUG 2021-06-06 19:12:49,711 run.py(run_episodes 594)
+Progress: 63 / 300, Success rate: 35 / 63 Avg reward: 14.97 Avg turns: 25.40
+                       - DEBUG 2021-06-06 19:12:49,720 run.py(run_episodes 673)
+run_episodes Episode: 63
+                       - DEBUG 2021-06-06 19:12:49,720 run.py(run_episodes 594)
+Progress: 64 / 300, Success rate: 36 / 64 Avg reward: 15.88 Avg turns: 25.25
+                       - DEBUG 2021-06-06 19:12:49,735 run.py(run_episodes 673)
+run_episodes Episode: 64
+                       - DEBUG 2021-06-06 19:12:49,735 run.py(run_episodes 594)
+Progress: 65 / 300, Success rate: 37 / 65 Avg reward: 16.75 Avg turns: 25.11
+                       - DEBUG 2021-06-06 19:12:49,749 run.py(run_episodes 673)
+run_episodes Episode: 65
+                       - DEBUG 2021-06-06 19:12:49,750 run.py(run_episodes 594)
+Progress: 66 / 300, Success rate: 37 / 66 Avg reward: 15.59 Avg turns: 25.36
+                       - DEBUG 2021-06-06 19:12:49,958 run.py(run_episodes 673)
+run_episodes Episode: 66
+                       - DEBUG 2021-06-06 19:12:49,958 run.py(run_episodes 594)
+Progress: 67 / 300, Success rate: 37 / 67 Avg reward: 14.49 Avg turns: 25.55
+                       - DEBUG 2021-06-06 19:12:50,148 run.py(run_episodes 673)
+run_episodes Episode: 67
+                       - DEBUG 2021-06-06 19:12:50,148 run.py(run_episodes 594)
+Progress: 68 / 300, Success rate: 38 / 68 Avg reward: 15.35 Avg turns: 25.41
+                       - DEBUG 2021-06-06 19:12:50,154 run.py(run_episodes 673)
+run_episodes Episode: 68
+                       - DEBUG 2021-06-06 19:12:50,154 run.py(run_episodes 594)
+Progress: 69 / 300, Success rate: 39 / 69 Avg reward: 16.19 Avg turns: 25.28
+                       - DEBUG 2021-06-06 19:12:50,172 run.py(run_episodes 673)
+run_episodes Episode: 69
+                       - DEBUG 2021-06-06 19:12:50,172 run.py(run_episodes 594)
+Progress: 70 / 300, Success rate: 40 / 70 Avg reward: 17.00 Avg turns: 25.14
+                       - DEBUG 2021-06-06 19:12:50,187 run.py(run_episodes 673)
+run_episodes Episode: 70
+                       - DEBUG 2021-06-06 19:12:50,187 run.py(run_episodes 594)
+Progress: 71 / 300, Success rate: 41 / 71 Avg reward: 17.79 Avg turns: 25.01
+                       - DEBUG 2021-06-06 19:12:50,193 run.py(run_episodes 673)
+run_episodes Episode: 71
+                       - DEBUG 2021-06-06 19:12:50,193 run.py(run_episodes 594)
+Progress: 72 / 300, Success rate: 42 / 72 Avg reward: 18.56 Avg turns: 24.89
+                       - DEBUG 2021-06-06 19:12:50,207 run.py(run_episodes 673)
+run_episodes Episode: 72
+                       - DEBUG 2021-06-06 19:12:50,207 run.py(run_episodes 594)
+Progress: 73 / 300, Success rate: 42 / 73 Avg reward: 17.53 Avg turns: 25.01
+                       - DEBUG 2021-06-06 19:12:50,543 run.py(run_episodes 673)
+run_episodes Episode: 73
+                       - DEBUG 2021-06-06 19:12:50,543 run.py(run_episodes 594)
+Progress: 74 / 300, Success rate: 42 / 74 Avg reward: 16.66 Avg turns: 24.89
+                       - DEBUG 2021-06-06 19:12:50,565 run.py(run_episodes 673)
+run_episodes Episode: 74
+                       - DEBUG 2021-06-06 19:12:50,565 run.py(run_episodes 594)
+Progress: 75 / 300, Success rate: 43 / 75 Avg reward: 17.41 Avg turns: 24.77
+                       - DEBUG 2021-06-06 19:12:50,579 run.py(run_episodes 673)
+run_episodes Episode: 75
+                       - DEBUG 2021-06-06 19:12:50,579 run.py(run_episodes 594)
+Progress: 76 / 300, Success rate: 44 / 76 Avg reward: 18.12 Avg turns: 24.71
+                       - DEBUG 2021-06-06 19:12:50,604 run.py(run_episodes 673)
+run_episodes Episode: 76
+                       - DEBUG 2021-06-06 19:12:50,604 run.py(run_episodes 594)
+Progress: 77 / 300, Success rate: 44 / 77 Avg reward: 17.10 Avg turns: 24.94
+                       - DEBUG 2021-06-06 19:12:50,756 run.py(run_episodes 673)
+run_episodes Episode: 77
+                       - DEBUG 2021-06-06 19:12:50,756 run.py(run_episodes 594)
+Progress: 78 / 300, Success rate: 44 / 78 Avg reward: 16.12 Avg turns: 25.15
+                       - DEBUG 2021-06-06 19:12:50,790 run.py(run_episodes 673)
+run_episodes Episode: 78
+                       - DEBUG 2021-06-06 19:12:50,790 run.py(run_episodes 594)
+Progress: 79 / 300, Success rate: 45 / 79 Avg reward: 16.84 Avg turns: 25.04
+                       - DEBUG 2021-06-06 19:12:50,829 run.py(run_episodes 673)
+run_episodes Episode: 79
+                       - DEBUG 2021-06-06 19:12:50,829 run.py(run_episodes 594)
+Progress: 80 / 300, Success rate: 46 / 80 Avg reward: 17.54 Avg turns: 24.93
+                       - DEBUG 2021-06-06 19:12:50,854 run.py(run_episodes 673)
+run_episodes Episode: 80
+                       - DEBUG 2021-06-06 19:12:50,854 run.py(run_episodes 594)
+Progress: 81 / 300, Success rate: 47 / 81 Avg reward: 18.22 Avg turns: 24.81
+                       - DEBUG 2021-06-06 19:12:50,869 run.py(run_episodes 673)
+run_episodes Episode: 81
+                       - DEBUG 2021-06-06 19:12:50,869 run.py(run_episodes 594)
+Progress: 82 / 300, Success rate: 48 / 82 Avg reward: 18.87 Avg turns: 24.76
+                       - DEBUG 2021-06-06 19:12:50,899 run.py(run_episodes 673)
+run_episodes Episode: 82
+                       - DEBUG 2021-06-06 19:12:50,899 run.py(run_episodes 594)
+Progress: 83 / 300, Success rate: 49 / 83 Avg reward: 19.52 Avg turns: 24.65
+                       - DEBUG 2021-06-06 19:12:50,916 run.py(run_episodes 673)
+run_episodes Episode: 83
+                       - DEBUG 2021-06-06 19:12:50,916 run.py(run_episodes 594)
+Progress: 84 / 300, Success rate: 49 / 84 Avg reward: 18.57 Avg turns: 24.86
+                       - DEBUG 2021-06-06 19:12:51,459 run.py(run_episodes 673)
+run_episodes Episode: 84
+                       - DEBUG 2021-06-06 19:12:51,459 run.py(run_episodes 594)
+Progress: 85 / 300, Success rate: 50 / 85 Avg reward: 19.19 Avg turns: 24.80
+                       - DEBUG 2021-06-06 19:12:51,485 run.py(run_episodes 673)
+run_episodes Episode: 85
+                       - DEBUG 2021-06-06 19:12:51,485 run.py(run_episodes 594)
+Progress: 86 / 300, Success rate: 51 / 86 Avg reward: 19.81 Avg turns: 24.70
+                       - DEBUG 2021-06-06 19:12:51,497 run.py(run_episodes 673)
+run_episodes Episode: 86
+                       - DEBUG 2021-06-06 19:12:51,497 run.py(run_episodes 594)
+Progress: 87 / 300, Success rate: 52 / 87 Avg reward: 20.40 Avg turns: 24.64
+                       - DEBUG 2021-06-06 19:12:51,508 run.py(run_episodes 673)
+run_episodes Episode: 87
+                       - DEBUG 2021-06-06 19:12:51,508 run.py(run_episodes 594)
+Progress: 88 / 300, Success rate: 52 / 88 Avg reward: 19.49 Avg turns: 24.84
+                       - DEBUG 2021-06-06 19:12:51,560 run.py(run_episodes 673)
+run_episodes Episode: 88
+                       - DEBUG 2021-06-06 19:12:51,560 run.py(run_episodes 594)
+Progress: 89 / 300, Success rate: 53 / 89 Avg reward: 20.09 Avg turns: 24.74
+                       - DEBUG 2021-06-06 19:12:51,566 run.py(run_episodes 673)
+run_episodes Episode: 89
+                       - DEBUG 2021-06-06 19:12:51,566 run.py(run_episodes 594)
+Progress: 90 / 300, Success rate: 53 / 90 Avg reward: 19.20 Avg turns: 24.93
+                       - DEBUG 2021-06-06 19:12:52,053 run.py(run_episodes 673)
+run_episodes Episode: 90
+                       - DEBUG 2021-06-06 19:12:52,053 run.py(run_episodes 594)
+Progress: 91 / 300, Success rate: 54 / 91 Avg reward: 19.79 Avg turns: 24.84
+                       - DEBUG 2021-06-06 19:12:52,059 run.py(run_episodes 673)
+run_episodes Episode: 91
+                       - DEBUG 2021-06-06 19:12:52,059 run.py(run_episodes 594)
+Progress: 92 / 300, Success rate: 55 / 92 Avg reward: 20.37 Avg turns: 24.74
+                       - DEBUG 2021-06-06 19:12:52,068 run.py(run_episodes 673)
+run_episodes Episode: 92
+                       - DEBUG 2021-06-06 19:12:52,068 run.py(run_episodes 594)
+Progress: 93 / 300, Success rate: 56 / 93 Avg reward: 20.94 Avg turns: 24.65
+                       - DEBUG 2021-06-06 19:12:52,074 run.py(run_episodes 673)
+run_episodes Episode: 93
+                       - DEBUG 2021-06-06 19:12:52,074 run.py(run_episodes 594)
+Progress: 94 / 300, Success rate: 57 / 94 Avg reward: 21.49 Avg turns: 24.55
+                       - DEBUG 2021-06-06 19:12:52,108 run.py(run_episodes 673)
+run_episodes Episode: 94
+                       - DEBUG 2021-06-06 19:12:52,108 run.py(run_episodes 594)
+Progress: 95 / 300, Success rate: 58 / 95 Avg reward: 21.97 Avg turns: 24.59
+                       - DEBUG 2021-06-06 19:12:52,142 run.py(run_episodes 673)
+run_episodes Episode: 95
+                       - DEBUG 2021-06-06 19:12:52,142 run.py(run_episodes 594)
+Progress: 96 / 300, Success rate: 59 / 96 Avg reward: 22.50 Avg turns: 24.50
+                       - DEBUG 2021-06-06 19:12:52,161 run.py(run_episodes 673)
+run_episodes Episode: 96
+                       - DEBUG 2021-06-06 19:12:52,161 run.py(run_episodes 594)
+Progress: 97 / 300, Success rate: 60 / 97 Avg reward: 23.00 Avg turns: 24.45
+                       - DEBUG 2021-06-06 19:12:52,185 run.py(run_episodes 673)
+run_episodes Episode: 97
+                       - DEBUG 2021-06-06 19:12:52,185 run.py(run_episodes 594)
+Progress: 98 / 300, Success rate: 60 / 98 Avg reward: 22.27 Avg turns: 24.41
+                       - DEBUG 2021-06-06 19:12:52,205 run.py(run_episodes 673)
+run_episodes Episode: 98
+                       - DEBUG 2021-06-06 19:12:52,205 run.py(run_episodes 594)
+Progress: 99 / 300, Success rate: 61 / 99 Avg reward: 22.78 Avg turns: 24.32
+                       - DEBUG 2021-06-06 19:12:52,219 run.py(run_episodes 673)
+run_episodes Episode: 99
+                       - DEBUG 2021-06-06 19:12:52,219 run.py(run_episodes 594)
+Progress: 100 / 300, Success rate: 61 / 100 Avg reward: 21.95 Avg turns: 24.50
+                       - DEBUG 2021-06-06 19:12:52,465 run.py(run_episodes 673)
+run_episodes Episode: 100
+                       - DEBUG 2021-06-06 19:12:52,465 run.py(run_episodes 594)
+Progress: 101 / 300, Success rate: 61 / 101 Avg reward: 21.14 Avg turns: 24.67
+                       - DEBUG 2021-06-06 19:12:52,511 run.py(run_episodes 673)
+run_episodes Episode: 101
+                       - DEBUG 2021-06-06 19:12:52,512 run.py(run_episodes 594)
+Progress: 102 / 300, Success rate: 62 / 102 Avg reward: 21.65 Avg turns: 24.59
+                       - DEBUG 2021-06-06 19:12:52,518 run.py(run_episodes 673)
+run_episodes Episode: 102
+                       - DEBUG 2021-06-06 19:12:52,518 run.py(run_episodes 594)
+Progress: 103 / 300, Success rate: 62 / 103 Avg reward: 20.98 Avg turns: 24.50
+                       - DEBUG 2021-06-06 19:12:52,537 run.py(run_episodes 673)
+run_episodes Episode: 103
+                       - DEBUG 2021-06-06 19:12:52,537 run.py(run_episodes 594)
+Progress: 104 / 300, Success rate: 62 / 104 Avg reward: 20.33 Avg turns: 24.42
+                       - DEBUG 2021-06-06 19:12:52,558 run.py(run_episodes 673)
+run_episodes Episode: 104
+                       - DEBUG 2021-06-06 19:12:52,558 run.py(run_episodes 594)
+Progress: 105 / 300, Success rate: 63 / 105 Avg reward: 20.81 Avg turns: 24.38
+                       - DEBUG 2021-06-06 19:12:52,585 run.py(run_episodes 673)
+run_episodes Episode: 105
+                       - DEBUG 2021-06-06 19:12:52,585 run.py(run_episodes 594)
+Progress: 106 / 300, Success rate: 63 / 106 Avg reward: 20.05 Avg turns: 24.55
+                       - DEBUG 2021-06-06 19:12:52,846 run.py(run_episodes 673)
+run_episodes Episode: 106
+                       - DEBUG 2021-06-06 19:12:52,847 run.py(run_episodes 594)
+Progress: 107 / 300, Success rate: 64 / 107 Avg reward: 20.54 Avg turns: 24.47
+                       - DEBUG 2021-06-06 19:12:52,865 run.py(run_episodes 673)
+run_episodes Episode: 107
+                       - DEBUG 2021-06-06 19:12:52,865 run.py(run_episodes 594)
+Progress: 108 / 300, Success rate: 65 / 108 Avg reward: 21.03 Avg turns: 24.39
+                       - DEBUG 2021-06-06 19:12:52,871 run.py(run_episodes 673)
+run_episodes Episode: 108
+                       - DEBUG 2021-06-06 19:12:52,871 run.py(run_episodes 594)
+Progress: 109 / 300, Success rate: 66 / 109 Avg reward: 21.50 Avg turns: 24.31
+                       - DEBUG 2021-06-06 19:12:52,895 run.py(run_episodes 673)
+run_episodes Episode: 109
+                       - DEBUG 2021-06-06 19:12:52,895 run.py(run_episodes 594)
+Progress: 110 / 300, Success rate: 66 / 110 Avg reward: 20.80 Avg turns: 24.40
+                       - DEBUG 2021-06-06 19:12:52,929 run.py(run_episodes 673)
+run_episodes Episode: 110
+                       - DEBUG 2021-06-06 19:12:52,929 run.py(run_episodes 594)
+Progress: 111 / 300, Success rate: 66 / 111 Avg reward: 20.07 Avg turns: 24.56
+                       - DEBUG 2021-06-06 19:12:53,093 run.py(run_episodes 673)
+run_episodes Episode: 111
+                       - DEBUG 2021-06-06 19:12:53,093 run.py(run_episodes 594)
+Progress: 112 / 300, Success rate: 66 / 112 Avg reward: 19.39 Avg turns: 24.64
+                       - DEBUG 2021-06-06 19:12:53,128 run.py(run_episodes 673)
+run_episodes Episode: 112
+                       - DEBUG 2021-06-06 19:12:53,128 run.py(run_episodes 594)
+Progress: 113 / 300, Success rate: 67 / 113 Avg reward: 19.85 Avg turns: 24.60
+                       - DEBUG 2021-06-06 19:12:53,149 run.py(run_episodes 673)
+run_episodes Episode: 113
+                       - DEBUG 2021-06-06 19:12:53,149 run.py(run_episodes 594)
+Progress: 114 / 300, Success rate: 68 / 114 Avg reward: 20.32 Avg turns: 24.53
+                       - DEBUG 2021-06-06 19:12:53,155 run.py(run_episodes 673)
+run_episodes Episode: 114
+                       - DEBUG 2021-06-06 19:12:53,155 run.py(run_episodes 594)
+Progress: 115 / 300, Success rate: 69 / 115 Avg reward: 20.77 Avg turns: 24.45
+                       - DEBUG 2021-06-06 19:12:53,161 run.py(run_episodes 673)
+run_episodes Episode: 115
+                       - DEBUG 2021-06-06 19:12:53,161 run.py(run_episodes 594)
+Progress: 116 / 300, Success rate: 70 / 116 Avg reward: 21.21 Avg turns: 24.41
+                       - DEBUG 2021-06-06 19:12:53,180 run.py(run_episodes 673)
+run_episodes Episode: 116
+                       - DEBUG 2021-06-06 19:12:53,180 run.py(run_episodes 594)
+Progress: 117 / 300, Success rate: 70 / 117 Avg reward: 20.61 Avg turns: 24.38
+                       - DEBUG 2021-06-06 19:12:53,258 run.py(run_episodes 673)
+run_episodes Episode: 117
+                       - DEBUG 2021-06-06 19:12:53,258 run.py(run_episodes 594)
+Progress: 118 / 300, Success rate: 71 / 118 Avg reward: 21.05 Avg turns: 24.31
+                       - DEBUG 2021-06-06 19:12:53,277 run.py(run_episodes 673)
+run_episodes Episode: 118
+                       - DEBUG 2021-06-06 19:12:53,277 run.py(run_episodes 594)
+Progress: 119 / 300, Success rate: 72 / 119 Avg reward: 21.49 Avg turns: 24.24
+                       - DEBUG 2021-06-06 19:12:53,283 run.py(run_episodes 673)
+run_episodes Episode: 119
+                       - DEBUG 2021-06-06 19:12:53,283 run.py(run_episodes 594)
+Progress: 120 / 300, Success rate: 72 / 120 Avg reward: 20.81 Avg turns: 24.38
+                       - DEBUG 2021-06-06 19:12:53,335 run.py(run_episodes 673)
+run_episodes Episode: 120
+                       - DEBUG 2021-06-06 19:12:53,335 run.py(run_episodes 594)
+Progress: 121 / 300, Success rate: 72 / 121 Avg reward: 20.14 Avg turns: 24.53
+                       - DEBUG 2021-06-06 19:12:53,437 run.py(run_episodes 673)
+run_episodes Episode: 121
+                       - DEBUG 2021-06-06 19:12:53,437 run.py(run_episodes 594)
+Progress: 122 / 300, Success rate: 73 / 122 Avg reward: 20.57 Avg turns: 24.46
+                       - DEBUG 2021-06-06 19:12:53,452 run.py(run_episodes 673)
+run_episodes Episode: 122
+                       - DEBUG 2021-06-06 19:12:53,452 run.py(run_episodes 594)
+Progress: 123 / 300, Success rate: 74 / 123 Avg reward: 21.00 Avg turns: 24.39
+                       - DEBUG 2021-06-06 19:12:53,469 run.py(run_episodes 673)
+run_episodes Episode: 123
+                       - DEBUG 2021-06-06 19:12:53,469 run.py(run_episodes 594)
+Progress: 124 / 300, Success rate: 75 / 124 Avg reward: 21.42 Avg turns: 24.32
+                       - DEBUG 2021-06-06 19:12:53,475 run.py(run_episodes 673)
+run_episodes Episode: 124
+                       - DEBUG 2021-06-06 19:12:53,475 run.py(run_episodes 594)
+Progress: 125 / 300, Success rate: 75 / 125 Avg reward: 20.77 Avg turns: 24.46
+                       - DEBUG 2021-06-06 19:12:53,556 run.py(run_episodes 673)
+run_episodes Episode: 125
+                       - DEBUG 2021-06-06 19:12:53,556 run.py(run_episodes 594)
+Progress: 126 / 300, Success rate: 75 / 126 Avg reward: 20.16 Avg turns: 24.54
+                       - DEBUG 2021-06-06 19:12:53,671 run.py(run_episodes 673)
+run_episodes Episode: 126
+                       - DEBUG 2021-06-06 19:12:53,671 run.py(run_episodes 594)
+Progress: 127 / 300, Success rate: 75 / 127 Avg reward: 19.53 Avg turns: 24.68
+                       - DEBUG 2021-06-06 19:12:53,865 run.py(run_episodes 673)
+run_episodes Episode: 127
+                       - DEBUG 2021-06-06 19:12:53,865 run.py(run_episodes 594)
+Progress: 128 / 300, Success rate: 76 / 128 Avg reward: 19.95 Avg turns: 24.61
+                       - DEBUG 2021-06-06 19:12:53,884 run.py(run_episodes 673)
+run_episodes Episode: 128
+                       - DEBUG 2021-06-06 19:12:53,884 run.py(run_episodes 594)
+Progress: 129 / 300, Success rate: 77 / 129 Avg reward: 20.36 Avg turns: 24.54
+                       - DEBUG 2021-06-06 19:12:53,903 run.py(run_episodes 673)
+run_episodes Episode: 129
+                       - DEBUG 2021-06-06 19:12:53,903 run.py(run_episodes 594)
+Progress: 130 / 300, Success rate: 77 / 130 Avg reward: 19.77 Avg turns: 24.62
+                       - DEBUG 2021-06-06 19:12:54,031 run.py(run_episodes 673)
+run_episodes Episode: 130
+                       - DEBUG 2021-06-06 19:12:54,031 run.py(run_episodes 594)
+Progress: 131 / 300, Success rate: 78 / 131 Avg reward: 20.18 Avg turns: 24.55
+                       - DEBUG 2021-06-06 19:12:54,037 run.py(run_episodes 673)
+run_episodes Episode: 131
+                       - DEBUG 2021-06-06 19:12:54,037 run.py(run_episodes 594)
+Progress: 132 / 300, Success rate: 78 / 132 Avg reward: 19.60 Avg turns: 24.62
+                       - DEBUG 2021-06-06 19:12:54,056 run.py(run_episodes 673)
+run_episodes Episode: 132
+                       - DEBUG 2021-06-06 19:12:54,056 run.py(run_episodes 594)
+Progress: 133 / 300, Success rate: 79 / 133 Avg reward: 20.00 Avg turns: 24.56
+                       - DEBUG 2021-06-06 19:12:54,071 run.py(run_episodes 673)
+run_episodes Episode: 133
+                       - DEBUG 2021-06-06 19:12:54,071 run.py(run_episodes 594)
+Progress: 134 / 300, Success rate: 79 / 134 Avg reward: 19.50 Avg turns: 24.49
+                       - DEBUG 2021-06-06 19:12:54,087 run.py(run_episodes 673)
+run_episodes Episode: 134
+                       - DEBUG 2021-06-06 19:12:54,087 run.py(run_episodes 594)
+Progress: 135 / 300, Success rate: 80 / 135 Avg reward: 19.84 Avg turns: 24.55
+                       - DEBUG 2021-06-06 19:12:54,117 run.py(run_episodes 673)
+run_episodes Episode: 135
+                       - DEBUG 2021-06-06 19:12:54,117 run.py(run_episodes 594)
+Progress: 136 / 300, Success rate: 81 / 136 Avg reward: 20.23 Avg turns: 24.49
+                       - DEBUG 2021-06-06 19:12:54,132 run.py(run_episodes 673)
+run_episodes Episode: 136
+                       - DEBUG 2021-06-06 19:12:54,132 run.py(run_episodes 594)
+Progress: 137 / 300, Success rate: 82 / 137 Avg reward: 20.60 Avg turns: 24.45
+                       - DEBUG 2021-06-06 19:12:54,149 run.py(run_episodes 673)
+run_episodes Episode: 137
+                       - DEBUG 2021-06-06 19:12:54,149 run.py(run_episodes 594)
+Progress: 138 / 300, Success rate: 83 / 138 Avg reward: 20.98 Avg turns: 24.39
+                       - DEBUG 2021-06-06 19:12:54,160 run.py(run_episodes 673)
+run_episodes Episode: 138
+                       - DEBUG 2021-06-06 19:12:54,160 run.py(run_episodes 594)
+Progress: 139 / 300, Success rate: 84 / 139 Avg reward: 21.29 Avg turns: 24.46
+                       - DEBUG 2021-06-06 19:12:54,184 run.py(run_episodes 673)
+run_episodes Episode: 139
+                       - DEBUG 2021-06-06 19:12:54,184 run.py(run_episodes 594)
+Progress: 140 / 300, Success rate: 85 / 140 Avg reward: 21.66 Avg turns: 24.40
+                       - DEBUG 2021-06-06 19:12:54,190 run.py(run_episodes 673)
+run_episodes Episode: 140
+                       - DEBUG 2021-06-06 19:12:54,190 run.py(run_episodes 594)
+Progress: 141 / 300, Success rate: 86 / 141 Avg reward: 22.02 Avg turns: 24.34
+                       - DEBUG 2021-06-06 19:12:54,201 run.py(run_episodes 673)
+run_episodes Episode: 141
+                       - DEBUG 2021-06-06 19:12:54,201 run.py(run_episodes 594)
+Progress: 142 / 300, Success rate: 86 / 142 Avg reward: 21.44 Avg turns: 24.46
+                       - DEBUG 2021-06-06 19:12:54,382 run.py(run_episodes 673)
+run_episodes Episode: 142
+                       - DEBUG 2021-06-06 19:12:54,382 run.py(run_episodes 594)
+Progress: 143 / 300, Success rate: 87 / 143 Avg reward: 21.80 Avg turns: 24.41
+                       - DEBUG 2021-06-06 19:12:54,388 run.py(run_episodes 673)
+run_episodes Episode: 143
+                       - DEBUG 2021-06-06 19:12:54,388 run.py(run_episodes 594)
+Progress: 144 / 300, Success rate: 88 / 144 Avg reward: 22.16 Avg turns: 24.35
+                       - DEBUG 2021-06-06 19:12:54,394 run.py(run_episodes 673)
+run_episodes Episode: 144
+                       - DEBUG 2021-06-06 19:12:54,394 run.py(run_episodes 594)
+Progress: 145 / 300, Success rate: 88 / 145 Avg reward: 21.59 Avg turns: 24.47
+                       - DEBUG 2021-06-06 19:12:54,437 run.py(run_episodes 673)
+run_episodes Episode: 145
+                       - DEBUG 2021-06-06 19:12:54,437 run.py(run_episodes 594)
+Progress: 146 / 300, Success rate: 88 / 146 Avg reward: 21.03 Avg turns: 24.59
+                       - DEBUG 2021-06-06 19:12:54,685 run.py(run_episodes 673)
+run_episodes Episode: 146
+                       - DEBUG 2021-06-06 19:12:54,685 run.py(run_episodes 594)
+Progress: 147 / 300, Success rate: 89 / 147 Avg reward: 21.39 Avg turns: 24.53
+                       - DEBUG 2021-06-06 19:12:54,701 run.py(run_episodes 673)
+run_episodes Episode: 147
+                       - DEBUG 2021-06-06 19:12:54,701 run.py(run_episodes 594)
+Progress: 148 / 300, Success rate: 90 / 148 Avg reward: 21.74 Avg turns: 24.47
+                       - DEBUG 2021-06-06 19:12:54,713 run.py(run_episodes 673)
+run_episodes Episode: 148
+                       - DEBUG 2021-06-06 19:12:54,713 run.py(run_episodes 594)
+Progress: 149 / 300, Success rate: 91 / 149 Avg reward: 22.08 Avg turns: 24.42
+                       - DEBUG 2021-06-06 19:12:54,719 run.py(run_episodes 673)
+run_episodes Episode: 149
+                       - DEBUG 2021-06-06 19:12:54,719 run.py(run_episodes 594)
+Progress: 150 / 300, Success rate: 92 / 150 Avg reward: 22.42 Avg turns: 24.36
+                       - DEBUG 2021-06-06 19:12:54,740 run.py(run_episodes 673)
+run_episodes Episode: 150
+                       - DEBUG 2021-06-06 19:12:54,740 run.py(run_episodes 594)
+Progress: 151 / 300, Success rate: 93 / 151 Avg reward: 22.75 Avg turns: 24.30
+                       - DEBUG 2021-06-06 19:12:54,757 run.py(run_episodes 673)
+run_episodes Episode: 151
+                       - DEBUG 2021-06-06 19:12:54,757 run.py(run_episodes 594)
+Progress: 152 / 300, Success rate: 93 / 152 Avg reward: 22.28 Avg turns: 24.28
+                       - DEBUG 2021-06-06 19:12:54,779 run.py(run_episodes 673)
+run_episodes Episode: 152
+                       - DEBUG 2021-06-06 19:12:54,780 run.py(run_episodes 594)
+Progress: 153 / 300, Success rate: 93 / 153 Avg reward: 21.75 Avg turns: 24.39
+                       - DEBUG 2021-06-06 19:12:55,029 run.py(run_episodes 673)
+run_episodes Episode: 153
+                       - DEBUG 2021-06-06 19:12:55,029 run.py(run_episodes 594)
+Progress: 154 / 300, Success rate: 94 / 154 Avg reward: 22.08 Avg turns: 24.34
+                       - DEBUG 2021-06-06 19:12:55,035 run.py(run_episodes 673)
+run_episodes Episode: 154
+                       - DEBUG 2021-06-06 19:12:55,035 run.py(run_episodes 594)
+Progress: 155 / 300, Success rate: 95 / 155 Avg reward: 22.41 Avg turns: 24.28
+                       - DEBUG 2021-06-06 19:12:55,041 run.py(run_episodes 673)
+run_episodes Episode: 155
+                       - DEBUG 2021-06-06 19:12:55,041 run.py(run_episodes 594)
+Progress: 156 / 300, Success rate: 96 / 156 Avg reward: 22.73 Avg turns: 24.23
+                       - DEBUG 2021-06-06 19:12:55,047 run.py(run_episodes 673)
+run_episodes Episode: 156
+                       - DEBUG 2021-06-06 19:12:55,047 run.py(run_episodes 594)
+Progress: 157 / 300, Success rate: 96 / 157 Avg reward: 22.20 Avg turns: 24.34
+                       - DEBUG 2021-06-06 19:12:55,146 run.py(run_episodes 673)
+run_episodes Episode: 157
+                       - DEBUG 2021-06-06 19:12:55,146 run.py(run_episodes 594)
+Progress: 158 / 300, Success rate: 97 / 158 Avg reward: 22.53 Avg turns: 24.29
+                       - DEBUG 2021-06-06 19:12:55,152 run.py(run_episodes 673)
+run_episodes Episode: 158
+                       - DEBUG 2021-06-06 19:12:55,152 run.py(run_episodes 594)
+Progress: 159 / 300, Success rate: 97 / 159 Avg reward: 22.01 Avg turns: 24.40
+                       - DEBUG 2021-06-06 19:12:55,250 run.py(run_episodes 673)
+run_episodes Episode: 159
+                       - DEBUG 2021-06-06 19:12:55,250 run.py(run_episodes 594)
+Progress: 160 / 300, Success rate: 97 / 160 Avg reward: 21.49 Avg turns: 24.51
+                       - DEBUG 2021-06-06 19:12:55,485 run.py(run_episodes 673)
+run_episodes Episode: 160
+                       - DEBUG 2021-06-06 19:12:55,485 run.py(run_episodes 594)
+Progress: 161 / 300, Success rate: 98 / 161 Avg reward: 21.81 Avg turns: 24.46
+                       - DEBUG 2021-06-06 19:12:55,510 run.py(run_episodes 673)
+run_episodes Episode: 161
+                       - DEBUG 2021-06-06 19:12:55,510 run.py(run_episodes 594)
+Progress: 162 / 300, Success rate: 99 / 162 Avg reward: 22.13 Avg turns: 24.41
+                       - DEBUG 2021-06-06 19:12:55,516 run.py(run_episodes 673)
+run_episodes Episode: 162
+                       - DEBUG 2021-06-06 19:12:55,516 run.py(run_episodes 594)
+Progress: 163 / 300, Success rate: 99 / 163 Avg reward: 21.63 Avg turns: 24.52
+                       - DEBUG 2021-06-06 19:12:55,664 run.py(run_episodes 673)
+run_episodes Episode: 163
+                       - DEBUG 2021-06-06 19:12:55,664 run.py(run_episodes 594)
+Progress: 164 / 300, Success rate: 100 / 164 Avg reward: 21.94 Avg turns: 24.46
+                       - DEBUG 2021-06-06 19:12:55,673 run.py(run_episodes 673)
+run_episodes Episode: 164
+                       - DEBUG 2021-06-06 19:12:55,673 run.py(run_episodes 594)
+Progress: 165 / 300, Success rate: 101 / 165 Avg reward: 22.25 Avg turns: 24.41
+                       - DEBUG 2021-06-06 19:12:55,682 run.py(run_episodes 673)
+run_episodes Episode: 165
+                       - DEBUG 2021-06-06 19:12:55,682 run.py(run_episodes 594)
+Progress: 166 / 300, Success rate: 101 / 166 Avg reward: 21.75 Avg turns: 24.52
+                       - DEBUG 2021-06-06 19:12:55,967 run.py(run_episodes 673)
+run_episodes Episode: 166
+                       - DEBUG 2021-06-06 19:12:55,967 run.py(run_episodes 594)
+Progress: 167 / 300, Success rate: 102 / 167 Avg reward: 22.05 Avg turns: 24.49
+                       - DEBUG 2021-06-06 19:12:55,991 run.py(run_episodes 673)
+run_episodes Episode: 167
+                       - DEBUG 2021-06-06 19:12:55,991 run.py(run_episodes 594)
+Progress: 168 / 300, Success rate: 103 / 168 Avg reward: 22.34 Avg turns: 24.46
+                       - DEBUG 2021-06-06 19:12:56,005 run.py(run_episodes 673)
+run_episodes Episode: 168
+                       - DEBUG 2021-06-06 19:12:56,005 run.py(run_episodes 594)
+Progress: 169 / 300, Success rate: 104 / 169 Avg reward: 22.64 Avg turns: 24.41
+                       - DEBUG 2021-06-06 19:12:56,051 run.py(run_episodes 673)
+run_episodes Episode: 169
+                       - DEBUG 2021-06-06 19:12:56,051 run.py(run_episodes 594)
+Progress: 170 / 300, Success rate: 104 / 170 Avg reward: 22.15 Avg turns: 24.52
+                       - DEBUG 2021-06-06 19:12:56,223 run.py(run_episodes 673)
+run_episodes Episode: 170
+                       - DEBUG 2021-06-06 19:12:56,223 run.py(run_episodes 594)
+Progress: 171 / 300, Success rate: 105 / 171 Avg reward: 22.45 Avg turns: 24.47
+                       - DEBUG 2021-06-06 19:12:56,244 run.py(run_episodes 673)
+run_episodes Episode: 171
+                       - DEBUG 2021-06-06 19:12:56,244 run.py(run_episodes 594)
+Progress: 172 / 300, Success rate: 105 / 172 Avg reward: 21.97 Avg turns: 24.57
+                       - DEBUG 2021-06-06 19:12:56,285 run.py(run_episodes 673)
+run_episodes Episode: 172
+                       - DEBUG 2021-06-06 19:12:56,285 run.py(run_episodes 594)
+Progress: 173 / 300, Success rate: 105 / 173 Avg reward: 21.50 Avg turns: 24.67
+                       - DEBUG 2021-06-06 19:12:56,489 run.py(run_episodes 673)
+run_episodes Episode: 173
+                       - DEBUG 2021-06-06 19:12:56,489 run.py(run_episodes 594)
+Progress: 174 / 300, Success rate: 105 / 174 Avg reward: 21.03 Avg turns: 24.77
+                       - DEBUG 2021-06-06 19:12:56,644 run.py(run_episodes 673)
+run_episodes Episode: 174
+                       - DEBUG 2021-06-06 19:12:56,644 run.py(run_episodes 594)
+Progress: 175 / 300, Success rate: 106 / 175 Avg reward: 21.33 Avg turns: 24.72
+                       - DEBUG 2021-06-06 19:12:56,668 run.py(run_episodes 673)
+run_episodes Episode: 175
+                       - DEBUG 2021-06-06 19:12:56,668 run.py(run_episodes 594)
+Progress: 176 / 300, Success rate: 107 / 176 Avg reward: 21.62 Avg turns: 24.67
+                       - DEBUG 2021-06-06 19:12:56,679 run.py(run_episodes 673)
+run_episodes Episode: 176
+                       - DEBUG 2021-06-06 19:12:56,679 run.py(run_episodes 594)
+Progress: 177 / 300, Success rate: 108 / 177 Avg reward: 21.91 Avg turns: 24.62
+                       - DEBUG 2021-06-06 19:12:56,691 run.py(run_episodes 673)
+run_episodes Episode: 177
+                       - DEBUG 2021-06-06 19:12:56,691 run.py(run_episodes 594)
+Progress: 178 / 300, Success rate: 108 / 178 Avg reward: 21.47 Avg turns: 24.67
+                       - DEBUG 2021-06-06 19:12:56,710 run.py(run_episodes 673)
+run_episodes Episode: 178
+                       - DEBUG 2021-06-06 19:12:56,710 run.py(run_episodes 594)
+Progress: 179 / 300, Success rate: 109 / 179 Avg reward: 21.75 Avg turns: 24.65
+                       - DEBUG 2021-06-06 19:12:56,734 run.py(run_episodes 673)
+run_episodes Episode: 179
+                       - DEBUG 2021-06-06 19:12:56,734 run.py(run_episodes 594)
+Progress: 180 / 300, Success rate: 110 / 180 Avg reward: 22.02 Avg turns: 24.62
+                       - DEBUG 2021-06-06 19:12:56,753 run.py(run_episodes 673)
+run_episodes Episode: 180
+                       - DEBUG 2021-06-06 19:12:56,753 run.py(run_episodes 594)
+Progress: 181 / 300, Success rate: 110 / 181 Avg reward: 21.57 Avg turns: 24.72
+                       - DEBUG 2021-06-06 19:12:56,909 run.py(run_episodes 673)
+run_episodes Episode: 181
+                       - DEBUG 2021-06-06 19:12:56,909 run.py(run_episodes 594)
+Progress: 182 / 300, Success rate: 110 / 182 Avg reward: 21.19 Avg turns: 24.67
+                       - DEBUG 2021-06-06 19:12:56,924 run.py(run_episodes 673)
+run_episodes Episode: 182
+                       - DEBUG 2021-06-06 19:12:56,924 run.py(run_episodes 594)
+Progress: 183 / 300, Success rate: 110 / 183 Avg reward: 20.75 Avg turns: 24.77
+                       - DEBUG 2021-06-06 19:12:56,988 run.py(run_episodes 673)
+run_episodes Episode: 183
+                       - DEBUG 2021-06-06 19:12:56,988 run.py(run_episodes 594)
+Progress: 184 / 300, Success rate: 110 / 184 Avg reward: 20.36 Avg turns: 24.76
+                       - DEBUG 2021-06-06 19:12:57,066 run.py(run_episodes 673)
+run_episodes Episode: 184
+                       - DEBUG 2021-06-06 19:12:57,066 run.py(run_episodes 594)
+Progress: 185 / 300, Success rate: 111 / 185 Avg reward: 20.64 Avg turns: 24.71
+                       - DEBUG 2021-06-06 19:12:57,081 run.py(run_episodes 673)
+run_episodes Episode: 185
+                       - DEBUG 2021-06-06 19:12:57,081 run.py(run_episodes 594)
+Progress: 186 / 300, Success rate: 111 / 186 Avg reward: 20.21 Avg turns: 24.81
+                       - DEBUG 2021-06-06 19:12:57,121 run.py(run_episodes 673)
+run_episodes Episode: 186
+                       - DEBUG 2021-06-06 19:12:57,122 run.py(run_episodes 594)
+Progress: 187 / 300, Success rate: 112 / 187 Avg reward: 20.49 Avg turns: 24.76
+                       - DEBUG 2021-06-06 19:12:57,136 run.py(run_episodes 673)
+run_episodes Episode: 187
+                       - DEBUG 2021-06-06 19:12:57,136 run.py(run_episodes 594)
+Progress: 188 / 300, Success rate: 113 / 188 Avg reward: 20.77 Avg turns: 24.71
+                       - DEBUG 2021-06-06 19:12:57,142 run.py(run_episodes 673)
+run_episodes Episode: 188
+                       - DEBUG 2021-06-06 19:12:57,142 run.py(run_episodes 594)
+Progress: 189 / 300, Success rate: 113 / 189 Avg reward: 20.34 Avg turns: 24.80
+                       - DEBUG 2021-06-06 19:12:57,336 run.py(run_episodes 673)
+run_episodes Episode: 189
+                       - DEBUG 2021-06-06 19:12:57,336 run.py(run_episodes 594)
+Progress: 190 / 300, Success rate: 114 / 190 Avg reward: 20.62 Avg turns: 24.76
+                       - DEBUG 2021-06-06 19:12:57,342 run.py(run_episodes 673)
+run_episodes Episode: 190
+                       - DEBUG 2021-06-06 19:12:57,343 run.py(run_episodes 594)
+Progress: 191 / 300, Success rate: 115 / 191 Avg reward: 20.90 Avg turns: 24.71
+                       - DEBUG 2021-06-06 19:12:57,349 run.py(run_episodes 673)
+run_episodes Episode: 191
+                       - DEBUG 2021-06-06 19:12:57,349 run.py(run_episodes 594)
+Progress: 192 / 300, Success rate: 116 / 192 Avg reward: 21.17 Avg turns: 24.67
+                       - DEBUG 2021-06-06 19:12:57,363 run.py(run_episodes 673)
+run_episodes Episode: 192
+                       - DEBUG 2021-06-06 19:12:57,363 run.py(run_episodes 594)
+Progress: 193 / 300, Success rate: 117 / 193 Avg reward: 21.44 Avg turns: 24.62
+                       - DEBUG 2021-06-06 19:12:57,378 run.py(run_episodes 673)
+run_episodes Episode: 193
+                       - DEBUG 2021-06-06 19:12:57,378 run.py(run_episodes 594)
+Progress: 194 / 300, Success rate: 117 / 194 Avg reward: 21.07 Avg turns: 24.60
+                       - DEBUG 2021-06-06 19:12:57,399 run.py(run_episodes 673)
+run_episodes Episode: 194
+                       - DEBUG 2021-06-06 19:12:57,399 run.py(run_episodes 594)
+Progress: 195 / 300, Success rate: 117 / 195 Avg reward: 20.71 Avg turns: 24.57
+                       - DEBUG 2021-06-06 19:12:57,414 run.py(run_episodes 673)
+run_episodes Episode: 195
+                       - DEBUG 2021-06-06 19:12:57,414 run.py(run_episodes 594)
+Progress: 196 / 300, Success rate: 118 / 196 Avg reward: 20.98 Avg turns: 24.53
+                       - DEBUG 2021-06-06 19:12:57,426 run.py(run_episodes 673)
+run_episodes Episode: 196
+                       - DEBUG 2021-06-06 19:12:57,426 run.py(run_episodes 594)
+Progress: 197 / 300, Success rate: 119 / 197 Avg reward: 21.24 Avg turns: 24.49
+                       - DEBUG 2021-06-06 19:12:57,438 run.py(run_episodes 673)
+run_episodes Episode: 197
+                       - DEBUG 2021-06-06 19:12:57,438 run.py(run_episodes 594)
+Progress: 198 / 300, Success rate: 120 / 198 Avg reward: 21.51 Avg turns: 24.44
+                       - DEBUG 2021-06-06 19:12:57,453 run.py(run_episodes 673)
+run_episodes Episode: 198
+                       - DEBUG 2021-06-06 19:12:57,453 run.py(run_episodes 594)
+Progress: 199 / 300, Success rate: 121 / 199 Avg reward: 21.76 Avg turns: 24.40
+                       - DEBUG 2021-06-06 19:12:57,462 run.py(run_episodes 673)
+run_episodes Episode: 199
+                       - DEBUG 2021-06-06 19:12:57,462 run.py(run_episodes 594)
+Progress: 200 / 300, Success rate: 122 / 200 Avg reward: 22.02 Avg turns: 24.36
+                       - DEBUG 2021-06-06 19:12:57,471 run.py(run_episodes 673)
+run_episodes Episode: 200
+                       - DEBUG 2021-06-06 19:12:57,471 run.py(run_episodes 594)
+Progress: 201 / 300, Success rate: 122 / 201 Avg reward: 21.64 Avg turns: 24.40
+                       - DEBUG 2021-06-06 19:12:57,524 run.py(run_episodes 673)
+run_episodes Episode: 201
+                       - DEBUG 2021-06-06 19:12:57,524 run.py(run_episodes 594)
+Progress: 202 / 300, Success rate: 122 / 202 Avg reward: 21.25 Avg turns: 24.45
+                       - DEBUG 2021-06-06 19:12:57,655 run.py(run_episodes 673)
+run_episodes Episode: 202
+                       - DEBUG 2021-06-06 19:12:57,655 run.py(run_episodes 594)
+Progress: 203 / 300, Success rate: 123 / 203 Avg reward: 21.51 Avg turns: 24.40
+                       - DEBUG 2021-06-06 19:12:57,661 run.py(run_episodes 673)
+run_episodes Episode: 203
+                       - DEBUG 2021-06-06 19:12:57,662 run.py(run_episodes 594)
+Progress: 204 / 300, Success rate: 124 / 204 Avg reward: 21.76 Avg turns: 24.36
+                       - DEBUG 2021-06-06 19:12:57,667 run.py(run_episodes 673)
+run_episodes Episode: 204
+                       - DEBUG 2021-06-06 19:12:57,667 run.py(run_episodes 594)
+Progress: 205 / 300, Success rate: 124 / 205 Avg reward: 21.36 Avg turns: 24.45
+                       - DEBUG 2021-06-06 19:12:57,714 run.py(run_episodes 673)
+run_episodes Episode: 205
+                       - DEBUG 2021-06-06 19:12:57,714 run.py(run_episodes 594)
+Progress: 206 / 300, Success rate: 125 / 206 Avg reward: 21.61 Avg turns: 24.41
+                       - DEBUG 2021-06-06 19:12:57,723 run.py(run_episodes 673)
+run_episodes Episode: 206
+                       - DEBUG 2021-06-06 19:12:57,723 run.py(run_episodes 594)
+Progress: 207 / 300, Success rate: 126 / 207 Avg reward: 21.86 Avg turns: 24.37
+                       - DEBUG 2021-06-06 19:12:57,735 run.py(run_episodes 673)
+run_episodes Episode: 207
+                       - DEBUG 2021-06-06 19:12:57,735 run.py(run_episodes 594)
+Progress: 208 / 300, Success rate: 126 / 208 Avg reward: 21.47 Avg turns: 24.45
+                       - DEBUG 2021-06-06 19:12:57,780 run.py(run_episodes 673)
+run_episodes Episode: 208
+                       - DEBUG 2021-06-06 19:12:57,780 run.py(run_episodes 594)
+Progress: 209 / 300, Success rate: 126 / 209 Avg reward: 21.08 Avg turns: 24.54
+                       - DEBUG 2021-06-06 19:12:57,835 run.py(run_episodes 673)
+run_episodes Episode: 209
+                       - DEBUG 2021-06-06 19:12:57,835 run.py(run_episodes 594)
+Progress: 210 / 300, Success rate: 127 / 210 Avg reward: 21.31 Avg turns: 24.51
+                       - DEBUG 2021-06-06 19:12:57,863 run.py(run_episodes 673)
+run_episodes Episode: 210
+                       - DEBUG 2021-06-06 19:12:57,863 run.py(run_episodes 594)
+Progress: 211 / 300, Success rate: 128 / 211 Avg reward: 21.56 Avg turns: 24.47
+                       - DEBUG 2021-06-06 19:12:57,876 run.py(run_episodes 673)
+run_episodes Episode: 211
+                       - DEBUG 2021-06-06 19:12:57,876 run.py(run_episodes 594)
+Progress: 212 / 300, Success rate: 128 / 212 Avg reward: 21.19 Avg turns: 24.52
+                       - DEBUG 2021-06-06 19:12:57,963 run.py(run_episodes 673)
+run_episodes Episode: 212
+                       - DEBUG 2021-06-06 19:12:57,963 run.py(run_episodes 594)
+Progress: 213 / 300, Success rate: 128 / 213 Avg reward: 20.85 Avg turns: 24.52
+                       - DEBUG 2021-06-06 19:12:57,993 run.py(run_episodes 673)
+run_episodes Episode: 213
+                       - DEBUG 2021-06-06 19:12:57,994 run.py(run_episodes 594)
+Progress: 214 / 300, Success rate: 129 / 214 Avg reward: 21.10 Avg turns: 24.48
+                       - DEBUG 2021-06-06 19:12:58,006 run.py(run_episodes 673)
+run_episodes Episode: 214
+                       - DEBUG 2021-06-06 19:12:58,006 run.py(run_episodes 594)
+Progress: 215 / 300, Success rate: 130 / 215 Avg reward: 21.34 Avg turns: 24.44
+                       - DEBUG 2021-06-06 19:12:58,015 run.py(run_episodes 673)
+run_episodes Episode: 215
+                       - DEBUG 2021-06-06 19:12:58,015 run.py(run_episodes 594)
+Progress: 216 / 300, Success rate: 130 / 216 Avg reward: 20.96 Avg turns: 24.52
+                       - DEBUG 2021-06-06 19:12:58,230 run.py(run_episodes 673)
+run_episodes Episode: 216
+                       - DEBUG 2021-06-06 19:12:58,230 run.py(run_episodes 594)
+Progress: 217 / 300, Success rate: 131 / 217 Avg reward: 21.20 Avg turns: 24.48
+                       - DEBUG 2021-06-06 19:12:58,245 run.py(run_episodes 673)
+run_episodes Episode: 217
+                       - DEBUG 2021-06-06 19:12:58,245 run.py(run_episodes 594)
+Progress: 218 / 300, Success rate: 132 / 218 Avg reward: 21.44 Avg turns: 24.44
+                       - DEBUG 2021-06-06 19:12:58,251 run.py(run_episodes 673)
+run_episodes Episode: 218
+                       - DEBUG 2021-06-06 19:12:58,251 run.py(run_episodes 594)
+Progress: 219 / 300, Success rate: 133 / 219 Avg reward: 21.68 Avg turns: 24.40
+                       - DEBUG 2021-06-06 19:12:58,257 run.py(run_episodes 673)
+run_episodes Episode: 219
+                       - DEBUG 2021-06-06 19:12:58,257 run.py(run_episodes 594)
+Progress: 220 / 300, Success rate: 134 / 220 Avg reward: 21.90 Avg turns: 24.38
+                       - DEBUG 2021-06-06 19:12:58,303 run.py(run_episodes 673)
+run_episodes Episode: 220
+                       - DEBUG 2021-06-06 19:12:58,303 run.py(run_episodes 594)
+Progress: 221 / 300, Success rate: 134 / 221 Avg reward: 21.58 Avg turns: 24.36
+                       - DEBUG 2021-06-06 19:12:58,329 run.py(run_episodes 673)
+run_episodes Episode: 221
+                       - DEBUG 2021-06-06 19:12:58,329 run.py(run_episodes 594)
+Progress: 222 / 300, Success rate: 135 / 222 Avg reward: 21.81 Avg turns: 24.32
+                       - DEBUG 2021-06-06 19:12:58,335 run.py(run_episodes 673)
+run_episodes Episode: 222
+                       - DEBUG 2021-06-06 19:12:58,335 run.py(run_episodes 594)
+Progress: 223 / 300, Success rate: 135 / 223 Avg reward: 21.44 Avg turns: 24.40
+                       - DEBUG 2021-06-06 19:12:58,570 run.py(run_episodes 673)
+run_episodes Episode: 223
+                       - DEBUG 2021-06-06 19:12:58,570 run.py(run_episodes 594)
+Progress: 224 / 300, Success rate: 136 / 224 Avg reward: 21.67 Avg turns: 24.37
+                       - DEBUG 2021-06-06 19:12:58,579 run.py(run_episodes 673)
+run_episodes Episode: 224
+                       - DEBUG 2021-06-06 19:12:58,579 run.py(run_episodes 594)
+Progress: 225 / 300, Success rate: 136 / 225 Avg reward: 21.31 Avg turns: 24.44
+                       - DEBUG 2021-06-06 19:12:58,756 run.py(run_episodes 673)
+run_episodes Episode: 225
+                       - DEBUG 2021-06-06 19:12:58,756 run.py(run_episodes 594)
+Progress: 226 / 300, Success rate: 136 / 226 Avg reward: 21.01 Avg turns: 24.41
+                       - DEBUG 2021-06-06 19:12:58,762 run.py(run_episodes 673)
+run_episodes Episode: 226
+                       - DEBUG 2021-06-06 19:12:58,762 run.py(run_episodes 594)
+Progress: 227 / 300, Success rate: 137 / 227 Avg reward: 21.24 Avg turns: 24.37
+                       - DEBUG 2021-06-06 19:12:58,786 run.py(run_episodes 673)
+run_episodes Episode: 227
+                       - DEBUG 2021-06-06 19:12:58,786 run.py(run_episodes 594)
+Progress: 228 / 300, Success rate: 138 / 228 Avg reward: 21.46 Avg turns: 24.33
+                       - DEBUG 2021-06-06 19:12:58,798 run.py(run_episodes 673)
+run_episodes Episode: 228
+                       - DEBUG 2021-06-06 19:12:58,798 run.py(run_episodes 594)
+Progress: 229 / 300, Success rate: 139 / 229 Avg reward: 21.69 Avg turns: 24.30
+                       - DEBUG 2021-06-06 19:12:58,804 run.py(run_episodes 673)
+run_episodes Episode: 229
+                       - DEBUG 2021-06-06 19:12:58,804 run.py(run_episodes 594)
+Progress: 230 / 300, Success rate: 139 / 230 Avg reward: 21.35 Avg turns: 24.34
+                       - DEBUG 2021-06-06 19:12:59,144 run.py(run_episodes 673)
+run_episodes Episode: 230
+                       - DEBUG 2021-06-06 19:12:59,144 run.py(run_episodes 594)
+Progress: 231 / 300, Success rate: 140 / 231 Avg reward: 21.58 Avg turns: 24.30
+                       - DEBUG 2021-06-06 19:12:59,150 run.py(run_episodes 673)
+run_episodes Episode: 231
+                       - DEBUG 2021-06-06 19:12:59,150 run.py(run_episodes 594)
+Progress: 232 / 300, Success rate: 141 / 232 Avg reward: 21.79 Avg turns: 24.28
+                       - DEBUG 2021-06-06 19:12:59,168 run.py(run_episodes 673)
+run_episodes Episode: 232
+                       - DEBUG 2021-06-06 19:12:59,168 run.py(run_episodes 594)
+Progress: 233 / 300, Success rate: 142 / 233 Avg reward: 22.01 Avg turns: 24.25
+                       - DEBUG 2021-06-06 19:12:59,177 run.py(run_episodes 673)
+run_episodes Episode: 233
+                       - DEBUG 2021-06-06 19:12:59,178 run.py(run_episodes 594)
+Progress: 234 / 300, Success rate: 142 / 234 Avg reward: 21.66 Avg turns: 24.32
+                       - DEBUG 2021-06-06 19:12:59,233 run.py(run_episodes 673)
+run_episodes Episode: 234
+                       - DEBUG 2021-06-06 19:12:59,233 run.py(run_episodes 594)
+Progress: 235 / 300, Success rate: 142 / 235 Avg reward: 21.31 Avg turns: 24.40
+                       - DEBUG 2021-06-06 19:12:59,261 run.py(run_episodes 673)
+run_episodes Episode: 235
+                       - DEBUG 2021-06-06 19:12:59,261 run.py(run_episodes 594)
+Progress: 236 / 300, Success rate: 143 / 236 Avg reward: 21.53 Avg turns: 24.36
+                       - DEBUG 2021-06-06 19:12:59,267 run.py(run_episodes 673)
+run_episodes Episode: 236
+                       - DEBUG 2021-06-06 19:12:59,267 run.py(run_episodes 594)
+Progress: 237 / 300, Success rate: 144 / 237 Avg reward: 21.75 Avg turns: 24.33
+                       - DEBUG 2021-06-06 19:12:59,277 run.py(run_episodes 673)
+run_episodes Episode: 237
+                       - DEBUG 2021-06-06 19:12:59,277 run.py(run_episodes 594)
+Progress: 238 / 300, Success rate: 145 / 238 Avg reward: 21.96 Avg turns: 24.29
+                       - DEBUG 2021-06-06 19:12:59,283 run.py(run_episodes 673)
+run_episodes Episode: 238
+                       - DEBUG 2021-06-06 19:12:59,283 run.py(run_episodes 594)
+Progress: 239 / 300, Success rate: 146 / 239 Avg reward: 22.18 Avg turns: 24.26
+                       - DEBUG 2021-06-06 19:12:59,289 run.py(run_episodes 673)
+run_episodes Episode: 239
+                       - DEBUG 2021-06-06 19:12:59,289 run.py(run_episodes 594)
+Progress: 240 / 300, Success rate: 147 / 240 Avg reward: 22.39 Avg turns: 24.23
+                       - DEBUG 2021-06-06 19:12:59,295 run.py(run_episodes 673)
+run_episodes Episode: 240
+                       - DEBUG 2021-06-06 19:12:59,295 run.py(run_episodes 594)
+Progress: 241 / 300, Success rate: 148 / 241 Avg reward: 22.60 Avg turns: 24.19
+                       - DEBUG 2021-06-06 19:12:59,304 run.py(run_episodes 673)
+run_episodes Episode: 241
+                       - DEBUG 2021-06-06 19:12:59,304 run.py(run_episodes 594)
+Progress: 242 / 300, Success rate: 149 / 242 Avg reward: 22.79 Avg turns: 24.19
+                       - DEBUG 2021-06-06 19:12:59,320 run.py(run_episodes 673)
+run_episodes Episode: 242
+                       - DEBUG 2021-06-06 19:12:59,320 run.py(run_episodes 594)
+Progress: 243 / 300, Success rate: 150 / 243 Avg reward: 23.00 Avg turns: 24.16
+                       - DEBUG 2021-06-06 19:12:59,326 run.py(run_episodes 673)
+run_episodes Episode: 243
+                       - DEBUG 2021-06-06 19:12:59,326 run.py(run_episodes 594)
+Progress: 244 / 300, Success rate: 151 / 244 Avg reward: 23.20 Avg turns: 24.12
+                       - DEBUG 2021-06-06 19:12:59,332 run.py(run_episodes 673)
+run_episodes Episode: 244
+                       - DEBUG 2021-06-06 19:12:59,332 run.py(run_episodes 594)
+Progress: 245 / 300, Success rate: 151 / 245 Avg reward: 22.86 Avg turns: 24.20
+                       - DEBUG 2021-06-06 19:12:59,482 run.py(run_episodes 673)
+run_episodes Episode: 245
+                       - DEBUG 2021-06-06 19:12:59,482 run.py(run_episodes 594)
+Progress: 246 / 300, Success rate: 152 / 246 Avg reward: 23.07 Avg turns: 24.16
+                       - DEBUG 2021-06-06 19:12:59,488 run.py(run_episodes 673)
+run_episodes Episode: 246
+                       - DEBUG 2021-06-06 19:12:59,488 run.py(run_episodes 594)
+Progress: 247 / 300, Success rate: 152 / 247 Avg reward: 22.73 Avg turns: 24.23
+                       - DEBUG 2021-06-06 19:12:59,619 run.py(run_episodes 673)
+run_episodes Episode: 247
+                       - DEBUG 2021-06-06 19:12:59,619 run.py(run_episodes 594)
+Progress: 248 / 300, Success rate: 152 / 248 Avg reward: 22.40 Avg turns: 24.31
+                       - DEBUG 2021-06-06 19:12:59,874 run.py(run_episodes 673)
+run_episodes Episode: 248
+                       - DEBUG 2021-06-06 19:12:59,874 run.py(run_episodes 594)
+Progress: 249 / 300, Success rate: 152 / 249 Avg reward: 22.06 Avg turns: 24.38
+                       - DEBUG 2021-06-06 19:12:59,978 run.py(run_episodes 673)
+run_episodes Episode: 249
+                       - DEBUG 2021-06-06 19:12:59,978 run.py(run_episodes 594)
+Progress: 250 / 300, Success rate: 152 / 250 Avg reward: 21.79 Avg turns: 24.34
+                       - DEBUG 2021-06-06 19:12:59,998 run.py(run_episodes 673)
+run_episodes Episode: 250
+                       - DEBUG 2021-06-06 19:12:59,998 run.py(run_episodes 594)
+Progress: 251 / 300, Success rate: 153 / 251 Avg reward: 21.99 Avg turns: 24.31
+                       - DEBUG 2021-06-06 19:13:00,004 run.py(run_episodes 673)
+run_episodes Episode: 251
+                       - DEBUG 2021-06-06 19:13:00,004 run.py(run_episodes 594)
+Progress: 252 / 300, Success rate: 154 / 252 Avg reward: 22.19 Avg turns: 24.28
+                       - DEBUG 2021-06-06 19:13:00,045 run.py(run_episodes 673)
+run_episodes Episode: 252
+                       - DEBUG 2021-06-06 19:13:00,045 run.py(run_episodes 594)
+Progress: 253 / 300, Success rate: 155 / 253 Avg reward: 22.40 Avg turns: 24.25
+                       - DEBUG 2021-06-06 19:13:00,067 run.py(run_episodes 673)
+run_episodes Episode: 253
+                       - DEBUG 2021-06-06 19:13:00,067 run.py(run_episodes 594)
+Progress: 254 / 300, Success rate: 156 / 254 Avg reward: 22.59 Avg turns: 24.21
+                       - DEBUG 2021-06-06 19:13:00,073 run.py(run_episodes 673)
+run_episodes Episode: 254
+                       - DEBUG 2021-06-06 19:13:00,073 run.py(run_episodes 594)
+Progress: 255 / 300, Success rate: 156 / 255 Avg reward: 22.32 Avg turns: 24.18
+                       - DEBUG 2021-06-06 19:13:00,092 run.py(run_episodes 673)
+run_episodes Episode: 255
+                       - DEBUG 2021-06-06 19:13:00,092 run.py(run_episodes 594)
+Progress: 256 / 300, Success rate: 156 / 256 Avg reward: 22.00 Avg turns: 24.25
+                       - DEBUG 2021-06-06 19:13:00,131 run.py(run_episodes 673)
+run_episodes Episode: 256
+                       - DEBUG 2021-06-06 19:13:00,131 run.py(run_episodes 594)
+Progress: 257 / 300, Success rate: 156 / 257 Avg reward: 21.73 Avg turns: 24.22
+                       - DEBUG 2021-06-06 19:13:00,137 run.py(run_episodes 673)
+run_episodes Episode: 257
+                       - DEBUG 2021-06-06 19:13:00,137 run.py(run_episodes 594)
+Progress: 258 / 300, Success rate: 157 / 258 Avg reward: 21.93 Avg turns: 24.19
+                       - DEBUG 2021-06-06 19:13:00,143 run.py(run_episodes 673)
+run_episodes Episode: 258
+                       - DEBUG 2021-06-06 19:13:00,143 run.py(run_episodes 594)
+Progress: 259 / 300, Success rate: 157 / 259 Avg reward: 21.61 Avg turns: 24.25
+                       - DEBUG 2021-06-06 19:13:00,307 run.py(run_episodes 673)
+run_episodes Episode: 259
+                       - DEBUG 2021-06-06 19:13:00,307 run.py(run_episodes 594)
+Progress: 260 / 300, Success rate: 158 / 260 Avg reward: 21.78 Avg turns: 24.29
+                       - DEBUG 2021-06-06 19:13:00,479 run.py(run_episodes 673)
+run_episodes Episode: 260
+                       - DEBUG 2021-06-06 19:13:00,479 run.py(run_episodes 594)
+Progress: 261 / 300, Success rate: 159 / 261 Avg reward: 21.97 Avg turns: 24.26
+                       - DEBUG 2021-06-06 19:13:00,485 run.py(run_episodes 673)
+run_episodes Episode: 261
+                       - DEBUG 2021-06-06 19:13:00,485 run.py(run_episodes 594)
+Progress: 262 / 300, Success rate: 160 / 262 Avg reward: 22.17 Avg turns: 24.23
+                       - DEBUG 2021-06-06 19:13:00,491 run.py(run_episodes 673)
+run_episodes Episode: 262
+                       - DEBUG 2021-06-06 19:13:00,491 run.py(run_episodes 594)
+Progress: 263 / 300, Success rate: 160 / 263 Avg reward: 21.90 Avg turns: 24.20
+                       - DEBUG 2021-06-06 19:13:00,498 run.py(run_episodes 673)
+run_episodes Episode: 263
+                       - DEBUG 2021-06-06 19:13:00,498 run.py(run_episodes 594)
+Progress: 264 / 300, Success rate: 161 / 264 Avg reward: 22.09 Avg turns: 24.18
+                       - DEBUG 2021-06-06 19:13:00,517 run.py(run_episodes 673)
+run_episodes Episode: 264
+                       - DEBUG 2021-06-06 19:13:00,517 run.py(run_episodes 594)
+Progress: 265 / 300, Success rate: 161 / 265 Avg reward: 21.78 Avg turns: 24.25
+                       - DEBUG 2021-06-06 19:13:00,796 run.py(run_episodes 673)
+run_episodes Episode: 265
+                       - DEBUG 2021-06-06 19:13:00,796 run.py(run_episodes 594)
+Progress: 266 / 300, Success rate: 161 / 266 Avg reward: 21.47 Avg turns: 24.32
+                       - DEBUG 2021-06-06 19:13:00,884 run.py(run_episodes 673)
+run_episodes Episode: 266
+                       - DEBUG 2021-06-06 19:13:00,884 run.py(run_episodes 594)
+Progress: 267 / 300, Success rate: 162 / 267 Avg reward: 21.67 Avg turns: 24.28
+                       - DEBUG 2021-06-06 19:13:00,908 run.py(run_episodes 673)
+run_episodes Episode: 267
+                       - DEBUG 2021-06-06 19:13:00,908 run.py(run_episodes 594)
+Progress: 268 / 300, Success rate: 163 / 268 Avg reward: 21.86 Avg turns: 24.25
+                       - DEBUG 2021-06-06 19:13:00,914 run.py(run_episodes 673)
+run_episodes Episode: 268
+                       - DEBUG 2021-06-06 19:13:00,914 run.py(run_episodes 594)
+Progress: 269 / 300, Success rate: 164 / 269 Avg reward: 22.05 Avg turns: 24.22
+                       - DEBUG 2021-06-06 19:13:00,920 run.py(run_episodes 673)
+run_episodes Episode: 269
+                       - DEBUG 2021-06-06 19:13:00,920 run.py(run_episodes 594)
+Progress: 270 / 300, Success rate: 165 / 270 Avg reward: 22.24 Avg turns: 24.19
+                       - DEBUG 2021-06-06 19:13:00,926 run.py(run_episodes 673)
+run_episodes Episode: 270
+                       - DEBUG 2021-06-06 19:13:00,926 run.py(run_episodes 594)
+Progress: 271 / 300, Success rate: 166 / 271 Avg reward: 22.42 Avg turns: 24.18
+                       - DEBUG 2021-06-06 19:13:00,982 run.py(run_episodes 673)
+run_episodes Episode: 271
+                       - DEBUG 2021-06-06 19:13:00,982 run.py(run_episodes 594)
+Progress: 272 / 300, Success rate: 167 / 272 Avg reward: 22.60 Avg turns: 24.15
+                       - DEBUG 2021-06-06 19:13:00,989 run.py(run_episodes 673)
+run_episodes Episode: 272
+                       - DEBUG 2021-06-06 19:13:00,989 run.py(run_episodes 594)
+Progress: 273 / 300, Success rate: 168 / 273 Avg reward: 22.79 Avg turns: 24.12
+                       - DEBUG 2021-06-06 19:13:00,996 run.py(run_episodes 673)
+run_episodes Episode: 273
+                       - DEBUG 2021-06-06 19:13:00,996 run.py(run_episodes 594)
+Progress: 274 / 300, Success rate: 169 / 274 Avg reward: 22.97 Avg turns: 24.09
+                       - DEBUG 2021-06-06 19:13:01,006 run.py(run_episodes 673)
+run_episodes Episode: 274
+                       - DEBUG 2021-06-06 19:13:01,006 run.py(run_episodes 594)
+Progress: 275 / 300, Success rate: 169 / 275 Avg reward: 22.67 Avg turns: 24.15
+                       - DEBUG 2021-06-06 19:13:01,161 run.py(run_episodes 673)
+run_episodes Episode: 275
+                       - DEBUG 2021-06-06 19:13:01,161 run.py(run_episodes 594)
+Progress: 276 / 300, Success rate: 169 / 276 Avg reward: 22.37 Avg turns: 24.22
+                       - DEBUG 2021-06-06 19:13:01,189 run.py(run_episodes 673)
+run_episodes Episode: 276
+                       - DEBUG 2021-06-06 19:13:01,189 run.py(run_episodes 594)
+Progress: 277 / 300, Success rate: 170 / 277 Avg reward: 22.55 Avg turns: 24.19
+                       - DEBUG 2021-06-06 19:13:01,195 run.py(run_episodes 673)
+run_episodes Episode: 277
+                       - DEBUG 2021-06-06 19:13:01,195 run.py(run_episodes 594)
+Progress: 278 / 300, Success rate: 171 / 278 Avg reward: 22.73 Avg turns: 24.16
+                       - DEBUG 2021-06-06 19:13:01,201 run.py(run_episodes 673)
+run_episodes Episode: 278
+                       - DEBUG 2021-06-06 19:13:01,201 run.py(run_episodes 594)
+Progress: 279 / 300, Success rate: 171 / 279 Avg reward: 22.44 Avg turns: 24.22
+                       - DEBUG 2021-06-06 19:13:01,448 run.py(run_episodes 673)
+run_episodes Episode: 279
+                       - DEBUG 2021-06-06 19:13:01,448 run.py(run_episodes 594)
+Progress: 280 / 300, Success rate: 172 / 280 Avg reward: 22.58 Avg turns: 24.27
+                       - DEBUG 2021-06-06 19:13:01,687 run.py(run_episodes 673)
+run_episodes Episode: 280
+                       - DEBUG 2021-06-06 19:13:01,688 run.py(run_episodes 594)
+Progress: 281 / 300, Success rate: 173 / 281 Avg reward: 22.76 Avg turns: 24.24
+                       - DEBUG 2021-06-06 19:13:01,694 run.py(run_episodes 673)
+run_episodes Episode: 281
+                       - DEBUG 2021-06-06 19:13:01,694 run.py(run_episodes 594)
+Progress: 282 / 300, Success rate: 173 / 282 Avg reward: 22.46 Avg turns: 24.30
+                       - DEBUG 2021-06-06 19:13:01,754 run.py(run_episodes 673)
+run_episodes Episode: 282
+                       - DEBUG 2021-06-06 19:13:01,754 run.py(run_episodes 594)
+Progress: 283 / 300, Success rate: 173 / 283 Avg reward: 22.17 Avg turns: 24.37
+                       - DEBUG 2021-06-06 19:13:01,796 run.py(run_episodes 673)
+run_episodes Episode: 283
+                       - DEBUG 2021-06-06 19:13:01,796 run.py(run_episodes 594)
+Progress: 284 / 300, Success rate: 174 / 284 Avg reward: 22.35 Avg turns: 24.34
+                       - DEBUG 2021-06-06 19:13:01,818 run.py(run_episodes 673)
+run_episodes Episode: 284
+                       - DEBUG 2021-06-06 19:13:01,818 run.py(run_episodes 594)
+Progress: 285 / 300, Success rate: 175 / 285 Avg reward: 22.53 Avg turns: 24.31
+                       - DEBUG 2021-06-06 19:13:01,824 run.py(run_episodes 673)
+run_episodes Episode: 285
+                       - DEBUG 2021-06-06 19:13:01,824 run.py(run_episodes 594)
+Progress: 286 / 300, Success rate: 175 / 286 Avg reward: 22.24 Avg turns: 24.37
+                       - DEBUG 2021-06-06 19:13:01,976 run.py(run_episodes 673)
+run_episodes Episode: 286
+                       - DEBUG 2021-06-06 19:13:01,976 run.py(run_episodes 594)
+Progress: 287 / 300, Success rate: 175 / 287 Avg reward: 21.95 Avg turns: 24.43
+                       - DEBUG 2021-06-06 19:13:02,117 run.py(run_episodes 673)
+run_episodes Episode: 287
+                       - DEBUG 2021-06-06 19:13:02,117 run.py(run_episodes 594)
+Progress: 288 / 300, Success rate: 176 / 288 Avg reward: 22.13 Avg turns: 24.40
+                       - DEBUG 2021-06-06 19:13:02,126 run.py(run_episodes 673)
+run_episodes Episode: 288
+                       - DEBUG 2021-06-06 19:13:02,126 run.py(run_episodes 594)
+Progress: 289 / 300, Success rate: 177 / 289 Avg reward: 22.31 Avg turns: 24.37
+                       - DEBUG 2021-06-06 19:13:02,132 run.py(run_episodes 673)
+run_episodes Episode: 289
+                       - DEBUG 2021-06-06 19:13:02,132 run.py(run_episodes 594)
+Progress: 290 / 300, Success rate: 178 / 290 Avg reward: 22.48 Avg turns: 24.36
+                       - DEBUG 2021-06-06 19:13:02,144 run.py(run_episodes 673)
+run_episodes Episode: 290
+                       - DEBUG 2021-06-06 19:13:02,144 run.py(run_episodes 594)
+Progress: 291 / 300, Success rate: 179 / 291 Avg reward: 22.65 Avg turns: 24.33
+                       - DEBUG 2021-06-06 19:13:02,150 run.py(run_episodes 673)
+run_episodes Episode: 291
+                       - DEBUG 2021-06-06 19:13:02,150 run.py(run_episodes 594)
+Progress: 292 / 300, Success rate: 180 / 292 Avg reward: 22.82 Avg turns: 24.30
+                       - DEBUG 2021-06-06 19:13:02,156 run.py(run_episodes 673)
+run_episodes Episode: 292
+                       - DEBUG 2021-06-06 19:13:02,156 run.py(run_episodes 594)
+Progress: 293 / 300, Success rate: 180 / 293 Avg reward: 22.54 Avg turns: 24.36
+                       - DEBUG 2021-06-06 19:13:02,321 run.py(run_episodes 673)
+run_episodes Episode: 293
+                       - DEBUG 2021-06-06 19:13:02,321 run.py(run_episodes 594)
+Progress: 294 / 300, Success rate: 181 / 294 Avg reward: 22.71 Avg turns: 24.33
+                       - DEBUG 2021-06-06 19:13:02,327 run.py(run_episodes 673)
+run_episodes Episode: 294
+                       - DEBUG 2021-06-06 19:13:02,327 run.py(run_episodes 594)
+Progress: 295 / 300, Success rate: 181 / 295 Avg reward: 22.44 Avg turns: 24.38
+                       - DEBUG 2021-06-06 19:13:02,490 run.py(run_episodes 673)
+run_episodes Episode: 295
+                       - DEBUG 2021-06-06 19:13:02,490 run.py(run_episodes 594)
+Progress: 296 / 300, Success rate: 182 / 296 Avg reward: 22.60 Avg turns: 24.36
+                       - DEBUG 2021-06-06 19:13:02,576 run.py(run_episodes 673)
+run_episodes Episode: 296
+                       - DEBUG 2021-06-06 19:13:02,576 run.py(run_episodes 594)
+Progress: 297 / 300, Success rate: 183 / 297 Avg reward: 22.76 Avg turns: 24.35
+                       - DEBUG 2021-06-06 19:13:02,615 run.py(run_episodes 673)
+run_episodes Episode: 297
+                       - DEBUG 2021-06-06 19:13:02,615 run.py(run_episodes 594)
+Progress: 298 / 300, Success rate: 183 / 298 Avg reward: 22.49 Avg turns: 24.41
+                       - DEBUG 2021-06-06 19:13:02,677 run.py(run_episodes 673)
+run_episodes Episode: 298
+                       - DEBUG 2021-06-06 19:13:02,677 run.py(run_episodes 594)
+Progress: 299 / 300, Success rate: 183 / 299 Avg reward: 22.22 Avg turns: 24.45
+                       - DEBUG 2021-06-06 19:13:02,840 run.py(run_episodes 673)
+run_episodes Episode: 299
+                       - DEBUG 2021-06-06 19:13:02,841 run.py(run_episodes 594)
+Progress: 300 / 300, Success rate: 184 / 300 Avg reward: 22.39 Avg turns: 24.43
+                       - DEBUG 2021-06-06 19:13:02,847 run.py(run_episodes 673)
+Success rate: 184 / 300 Avg reward: 22.39 Avg turns: 24.43
+                       - INFO 2021-06-06 19:13:02,847 run.py(run_episodes 676)
+saved performance in ./result/evaluate_performance.json
+                       - INFO 2021-06-06 19:13:02,847 run.py(save_performance_records 404)
+total time 17.6363019943
+                       - INFO 2021-06-06 19:13:02,847 run.py(<module> 691)
