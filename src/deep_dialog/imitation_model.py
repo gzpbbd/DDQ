@@ -10,6 +10,7 @@ from torch.utils.data import TensorDataset, DataLoader
 from torch.autograd import Variable
 from tqdm import tqdm
 import numpy as np
+import logging
 
 
 class ImitationNet(nn.Module):
@@ -49,6 +50,7 @@ class ImitationPolicy():
         state_set = s_a_dataset['state'].float()
         action_set = s_a_dataset['action']
         data_set = TensorDataset(state_set, action_set)
+        logging.info('{} state-action pairs'.format(len(data_set)))
         self.data_loader = DataLoader(dataset=data_set, batch_size=64, shuffle=True)
 
     def train(self, epochs=400):
@@ -75,7 +77,9 @@ class ImitationPolicy():
                     t.set_postfix(acc=correct * 1.0 / total_samples,
                                   loss=total_loss * 1.0 / total_samples)
                     t.update(len(state_data))
-
+                    if i + 1 == len(self.data_loader):
+                        logging.info('im model train: epoch {}, accuracy {}, loss {}'.format(
+                            epoch, correct * 1.0 / total_samples, total_loss * 1.0 / total_samples))
 
     # 训练模型，打印模型精度
 
@@ -102,12 +106,14 @@ class ImitationPolicy():
 # 用 user simulator 评估 IM 模型
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     import os
+
     os.environ["CUDA_VISIBLE_DEVICES"] = '3'
     im = ImitationPolicy(device='cuda')
     models = []
     for i in range(10):
         import copy
+
         print i
         models.append(copy.deepcopy(im))

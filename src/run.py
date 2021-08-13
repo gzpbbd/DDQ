@@ -187,9 +187,13 @@ def parset_params():
     parser.add_argument('--device', type=str,
                         default='cuda:0',
                         help='using which device to run experiment')
-    # parser.add_argument('--log_filename', type=str,
-    #                     default='log/run.log',
-    #                     help='the filename of log file')
+    parser.add_argument('--to_do_what', type=str,
+                        default='train_rl',
+                        help='train_rl or train_im')  # 运行模式：train_rl 训练DDQ; train_im 利用DDQ模型训练IM模型。
+    parser.add_argument('--conversations_number_for_im_model', type=int,
+                        default=100000,
+                        help='how many conversations agent play with environment for training im '
+                             'model')
 
     args = parser.parse_args()
     params = vars(args)  # 返回args的属性名与属性值构成的字典
@@ -610,6 +614,7 @@ def run_episodes(count):
 def using_agent_play_conversation_with_user(
         agent_path='baseline/baseline_ddq_k5_5_agent_800_epoches/run2/agt_best.pkl'
         , s_a_path=None, epochs=100):
+    # 加载 rl 模型，与 environment 交互，基于所有完成用户任务的对话，生成 state-action 数据集，保存到 s_a_path 中
     agent.warm_start = 2  # 设置为2时，不使用 agent 的 rule policy
     agent.load(agent_path)
     state_action_pairs = []
@@ -634,26 +639,57 @@ def using_agent_play_conversation_with_user(
     if s_a_path:
         pickle.dump({'state': state, 'action': action}, open(s_a_path, 'wb'))
     logging.info(
-        'state_action_pairs {}, succeed_amount {}'.format(len(state_action_pairs), succeed_amount))
+        'generating state-action pairs: state_action_pairs {}, succeed_amount {}'.format(
+            len(state_action_pairs), succeed_amount))
 
+
+if params['to_do_what'] == 'train_rl':
+    # 训练 rl 模型
+    run_episodes(num_episodes)
+elif params['to_do_what'] == 'generate_state_action_pairs':
+    # 加载 rl 模型，与 environment 交互，生成 state-action 数据集
+    rl_model_path = os.path.join(params['write_model_dir'], 'best_model.pkl')
+    s_a_path = os.path.join(params['write_model_dir'], 's_a_pairs.pkl')
+    using_agent_play_conversation_with_user(rl_model_path, s_a_path,
+                                            epochs=params['conversations_number_for_im_model'])
+elif params['to_do_what'] == 'train_im':
+    # 基于 state-action 数据集，训练 im 模型
+    # rl_model_path = os.path.join(params['write_model_dir'], 'best_model.pkl')
+    im_policy = ImitationPolicy(agent.state_dimension, agent.num_actions, params['device'])
+
+    s_a_path = os.path.join(params['write_model_dir'], 's_a_pairs.pkl')
+    im_policy.create_data_loader(s_a_path)
+
+    im_policy.train(3)
+    im_model_path = os.path.join(params['write_model_dir'], 'im_model.pkl')
+    im_policy.save(im_model_path)
+
+    # 将 im 模型注入 agent 中，测试 im 模型对话成功率
+    agent.add_im_policy(im_policy)
+    agent.set_policy_method('im')
+    agent.warm_start = 2
+    simulation_res = computer_metrics(params['validation_epoch_size'])
+    logging.info('im model validate: {}'.format(simulation_res))
+
+logging.info('total time: {:.1f} minutes'.format((time.time() - start_time) / 60))
 
 # dqn_model_path = 'baseline/baseline_dqn_k5_5_agent_800_epoches/run4/agt_best.pkl'
 # s_a_path = 'result/ddq_s_a_path.pkl'  # 'result/ddq_s_a_path.pkl'  #
 # 'result/dqn_4_s_a_path.pkl'
-im_model_path = 'result/dqn_4_im_model_100000.pkl'
+# im_model_path = 'result/dqn_4_im_model_100000.pkl'
 
 # 生成对话数据并保存
 # using_agent_play_conversation_with_user(dqn_model_path, s_a_path, epochs=100)
 
 # 训练 im 模型
-im_policy = ImitationPolicy(agent.state_dimension, agent.num_actions, params['device'])
+# im_policy = ImitationPolicy(agent.state_dimension, agent.num_actions, params['device'])
 # im_policy.create_data_loader(s_a_path)
 # im_policy.train(3)
 # im_policy.save(im_model_path)
 
 # 加载 im 模型
-im_policy.load(im_model_path)
-agent.add_im_policy(im_policy)
+# im_policy.load(im_model_path)
+# agent.add_im_policy(im_policy)
 # # 加载 rl 模型
 # agent.load(dqn_model_path)
 #
@@ -691,9 +727,6 @@ agent.add_im_policy(im_policy)
 #         print 'sampling C {}, N {} policy {}'.format(c, n, simulation_res)
 
 
-agent.set_policy_method(params['policy_method'])
-agent.set_sampling_param_c(0.8)
-agent.set_sampling_param_n(300)
-run_episodes(num_episodes)
-
-logging.info('total time: {:.1f} minutes'.format((time.time() - start_time) / 60))
+# agent.set_policy_method(params['policy_method'])
+# agent.set_sampling_param_c(0.8)
+# agent.set_sampling_param_n(300)

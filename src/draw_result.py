@@ -4,6 +4,8 @@ import os
 import argparse
 import json
 from matplotlib import pyplot
+import pandas as pd
+import seaborn as sns
 
 
 def calculate_average_success_rate(result_dir, filename):
@@ -52,5 +54,34 @@ def draw_figures(dirs):
     pyplot.show()
 
 
+def read_to_data_frame(result_dir, algorithm, filename):
+    df = pd.DataFrame(columns=['algorithm', 'run_num', 'epoch', 'success_rate'])
+    sub_dir_list = os.listdir(result_dir)
+    for sub_dir in sub_dir_list:  # 对每个子目录的文件
+        # sub_dir_path = os.path.join(result_dir, sub_dir)
+        file_path = os.path.join(result_dir, sub_dir, filename)
+        with open(file_path, 'r') as f:
+            result = json.load(f)  # 读取记录
+            for epoch, success_rate in result['success_rate'].items():
+                df = df.append([{'algorithm': algorithm, 'run_num': sub_dir, 'epoch': int(epoch),
+                                 'success_rate': success_rate}])  # 加入 data frame 中
+    return df
+
+
+def draw_figure_from_data_frame(result_dirs, filename='performance.json'):
+    all_df = []
+    for dir in result_dirs:
+        result_df = read_to_data_frame(dir['dir'], dir['algorithm'], filename)
+        all_df.append(result_df)
+        print len(result_df)
+    df = pd.concat(all_df)
+    df.sort_values(by='run_num', inplace=True)
+    sns.relplot(x='epoch', y='success_rate', hue='run_num', data=df[df['algorithm'] == 'dqn_p4'],
+                kind='line')
+    return df
+
+
 if __name__ == '__main__':
-    draw_figures([])
+    draw_figure_from_data_frame([{'dir': 'result/dqn_p4_epoch400', 'algorithm': 'dqn_p4'},
+                                 {'dir': 'result/dqn_p0_epoch1500', 'algorithm': 'dqn_p0'}
+                                 ])
