@@ -1,4 +1,3 @@
-import seaborn as sns
+import sys
 
-fmri = sns.load_dataset("fmri")
-fmri.head()
+sys.stderr.write('a')

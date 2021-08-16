@@ -248,8 +248,6 @@ class AgentDQN(Agent):
         with torch.no_grad():
             if self.policy_method == 'im':
                 action = self.im_policy.predict(state_representation)
-                predict_im = self.im_policy.forward(state_representation)
-                predict_im = F.softmax(predict_im, dim=-1)
             elif self.policy_method == 'rl':
                 action = self.dqn.predict(state_representation)
             elif self.policy_method == 'add':
@@ -446,7 +444,7 @@ class AgentDQN(Agent):
     def set_policy_method(self, method):
         self.policy_method = method
 
-    def set_shaping_param(self, n):
+    def set_exp_param_n(self, n):
         self.policy_shaping_n = n
 
     def sample_and_recomputing_probability(self, probability):

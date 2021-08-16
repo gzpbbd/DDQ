@@ -10,6 +10,7 @@ import os
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = '3'
 
+import traceback
 from tqdm import tqdm
 import argparse, json, copy, os
 import cPickle as pickle
@@ -35,6 +36,7 @@ from deep_dialog.imitation_model import ImitationPolicy
 seed = 5
 numpy.random.seed(seed)
 random.seed(seed)
+init_random_state = random.getstate()
 
 import torch
 import numpy as np
@@ -194,6 +196,12 @@ def parset_params():
                         default=100000,
                         help='how many conversations agent play with environment for training im '
                              'model')
+    parser.add_argument('--im_train_epochs', type=int,
+                        default=5,
+                        help='how many epochs im model will be trained')
+    parser.add_argument('--log_filename', type=str,
+                        default='run.log',
+                        help='the filename of log file')
 
     args = parser.parse_args()
     params = vars(args)  # 返回args的属性名与属性值构成的字典
@@ -205,7 +213,7 @@ def parset_params():
 
 params = parset_params()
 
-init_logging(os.path.join(params['write_model_dir'], 'run.log'))
+init_logging(os.path.join(params['write_model_dir'], params['log_filename']))
 logging.info('Dialog Parameters: ')
 logging.info(json.dumps(params, indent=2))
 
@@ -381,7 +389,7 @@ performance_records['ave_reward'] = OrderedDict()
 """ Save model """
 
 
-def save_model(path, agent_model, filename='best_model.pkl'):
+def save_model(path, agent_model, filename='rl_model.pkl'):
     """
     保存模型到 path/agt_{agt}_{best_epoch}_{cur_epoch}_{success_rate}.pkl
 
@@ -440,6 +448,9 @@ def computer_metrics(simulation_epoch_size):
     :param simulation_epoch_size: 执行多少个 episode
     :return: 交互的指标。 字典 result。包含keys={'success_rate', 'ave_reward', 'ave_turns'}
     """
+    # 需要设置每次测试的随机数相同，使得测试用的 user goal 是相同的。测试完成之后，恢复随机数状态，使得测试过程不会影响训练过程
+    backup_random_state = random.getstate()
+    random.seed(seed)  # +100
     agent.set_evaluate_mode()
 
     successes = 0
@@ -461,6 +472,7 @@ def computer_metrics(simulation_epoch_size):
                 cumulative_turns += dialog_manager.state_tracker.turn_count
 
     agent.set_train_mode()
+    random.setstate(backup_random_state)
 
     res['success_rate'] = float(successes) / simulation_epoch_size
     res['ave_reward'] = float(cumulative_reward) / simulation_epoch_size
@@ -620,7 +632,7 @@ def using_agent_play_conversation_with_user(
     state_action_pairs = []
 
     succeed_amount = 0
-    for episode in tqdm(xrange(epochs)):
+    for episode in tqdm(xrange(epochs * 10)):
         agent.empty_s_a_pairs()
         dialog_manager.initialize_episode(use_environment=True)
         episode_over = False
@@ -631,45 +643,88 @@ def using_agent_play_conversation_with_user(
             if episode_over and reward > 0:
                 state_action_pairs.extend(agent.get_s_a_pairs())
                 succeed_amount += 1
+        if succeed_amount >= epochs:  # 产生epochs个成功的对话
+            break
 
     state = [torch.tensor(pair['state']) for pair in state_action_pairs]
     action = [torch.tensor(pair['action']) for pair in state_action_pairs]
     state = torch.stack(state, dim=0).squeeze(dim=1)
     action = torch.stack(action, dim=0).squeeze(dim=1)
-    if s_a_path:
-        pickle.dump({'state': state, 'action': action}, open(s_a_path, 'wb'))
     logging.info(
         'generating state-action pairs: state_action_pairs {}, succeed_amount {}'.format(
             len(state_action_pairs), succeed_amount))
+    if s_a_path:
+        pickle.dump({'state': state, 'action': action}, open(s_a_path, 'wb'))
+        logging.info('saving dataset to {}'.format(s_a_path))
 
 
-if params['to_do_what'] == 'train_rl':
-    # 训练 rl 模型
-    run_episodes(num_episodes)
-elif params['to_do_what'] == 'generate_state_action_pairs':
-    # 加载 rl 模型，与 environment 交互，生成 state-action 数据集
-    rl_model_path = os.path.join(params['write_model_dir'], 'best_model.pkl')
-    s_a_path = os.path.join(params['write_model_dir'], 's_a_pairs.pkl')
-    using_agent_play_conversation_with_user(rl_model_path, s_a_path,
-                                            epochs=params['conversations_number_for_im_model'])
-elif params['to_do_what'] == 'train_im':
-    # 基于 state-action 数据集，训练 im 模型
-    # rl_model_path = os.path.join(params['write_model_dir'], 'best_model.pkl')
-    im_policy = ImitationPolicy(agent.state_dimension, agent.num_actions, params['device'])
+def run():
+    if params['to_do_what'] == 'train_rl':
+        # 训练 rl 模型
+        run_episodes(num_episodes)
+    elif params['to_do_what'] == 'generate_state_action_pairs':
+        # 加载 rl 模型，与 environment 交互，生成 state-action 数据集
+        rl_model_path = os.path.join(params['write_model_dir'], 'rl_model.pkl')
+        s_a_path = os.path.join(params['write_model_dir'],
+                                's_a_pairs_{}.pkl'.format(
+                                    params['conversations_number_for_im_model']))
+        using_agent_play_conversation_with_user(rl_model_path, s_a_path,
+                                                epochs=params['conversations_number_for_im_model'])
+    elif params['to_do_what'] == 'train_im':
+        # 基于 state-action 数据集，训练 im 模型
+        rl_model_path = os.path.join(params['write_model_dir'], 'rl_model.pkl')
+        im_policy = ImitationPolicy(agent.state_dimension, agent.num_actions, params['device'])
 
-    s_a_path = os.path.join(params['write_model_dir'], 's_a_pairs.pkl')
-    im_policy.create_data_loader(s_a_path)
+        s_a_path = os.path.join(params['write_model_dir'],
+                                's_a_pairs_{}.pkl'.format(
+                                    params['conversations_number_for_im_model']))
+        im_policy.create_data_loader(s_a_path)
 
-    im_policy.train(3)
-    im_model_path = os.path.join(params['write_model_dir'], 'im_model.pkl')
-    im_policy.save(im_model_path)
+        im_policy.train(params['im_train_epochs'])
+        im_model_path = os.path.join(params['write_model_dir'], 'im_model.pkl')
+        im_policy.save(im_model_path)
 
-    # 将 im 模型注入 agent 中，测试 im 模型对话成功率
-    agent.add_im_policy(im_policy)
-    agent.set_policy_method('im')
-    agent.warm_start = 2
-    simulation_res = computer_metrics(params['validation_epoch_size'])
-    logging.info('im model validate: {}'.format(simulation_res))
+        agent.warm_start = 2
+        # 将 im 模型注入 agent 中，与加载 rl 模型
+        agent.add_im_policy(im_policy)
+        agent.load(rl_model_path)
+        # 测试两种模型的效果
+        for method in ['im', 'rl']:
+            agent.set_policy_method(method)
+            simulation_res = computer_metrics(params['validation_epoch_size'])
+            logging.info('{} model validate: {}'.format(method, simulation_res))
+    elif params['to_do_what'] == 'validation':
+        # load rl model
+        rl_model_path = os.path.join(params['write_model_dir'], 'rl_model.pkl')
+        agent.load(rl_model_path)
+        # load im model
+        im_model_path = os.path.join(params['write_model_dir'], 'im_model.pkl')
+        im_policy = ImitationPolicy(agent.state_dimension, agent.num_actions, params['device'])
+        im_policy.load(im_model_path)
+        agent.add_im_policy(im_policy)
+        # validation
+        agent.warm_start = 2
+        for method in ['e']:
+            agent.set_policy_method(method)
+            for n in [0.001, 0.01, 0.1, 1, 10]:
+                agent.set_exp_param_n(n)
+                simulation_res = computer_metrics(params['validation_epoch_size'])
+                logging.info('{}_{} model validate: {}'.format(method, n, simulation_res))
+        for method in ['sample']:
+            agent.set_policy_method(method)
+            for c in [0.6, 0.75, 0.9]:
+                for n in [150, 300, 600]:
+                    agent.set_sampling_param_c(c)
+                    agent.set_sampling_param_n(n)
+                    simulation_res = computer_metrics(params['validation_epoch_size'])
+                    logging.info(
+                        '{}_c{}_n{} model validate: {}'.format(method, c, n, simulation_res))
+
+
+try:
+    run()
+except Exception:
+    logging.error(traceback.format_exc())
 
 logging.info('total time: {:.1f} minutes'.format((time.time() - start_time) / 60))
 

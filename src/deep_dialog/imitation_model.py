@@ -100,6 +100,10 @@ class ImitationPolicy():
         # 计算所有Q值
         return self.net.forward(x.to(self.device))
 
+    def freeze(self, flag=True):
+        for param in self.net.parameters():
+            param.requires_grad = flag
+
 
 # 返回动作, state: [1,273], state: [1]
 
