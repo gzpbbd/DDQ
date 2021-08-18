@@ -88,9 +88,11 @@ class ImitationPolicy():
 
     def save(self, filename):
         torch.save(self.net.state_dict(), filename)
+        logging.info('saved im model to {}'.format(filename))
 
     def load(self, filename):
         self.net.load_state_dict(torch.load(filename))
+        logging.info('loaded im model from {}'.format(filename))
 
     def predict(self, x):
         # 直接得到对应的动作标签

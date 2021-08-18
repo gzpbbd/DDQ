@@ -202,6 +202,15 @@ def parset_params():
     parser.add_argument('--log_filename', type=str,
                         default='run.log',
                         help='the filename of log file')
+    parser.add_argument('--filename_of_rl_model', type=str,
+                        default='rl_model.pkl',
+                        help='the filename which be used to save rl model')
+    parser.add_argument('--filename_of_im_model', type=str,
+                        default='im_model.pkl',
+                        help='the filename which be used to save im model')
+    parser.add_argument('--filename_of_performances', type=str,
+                        default='performance.json',
+                        help='the filename which be used to save rl performances record')
 
     args = parser.parse_args()
     params = vars(args)  # 返回args的属性名与属性值构成的字典
@@ -403,7 +412,7 @@ def save_model(path, agent_model, filename='rl_model.pkl'):
     filepath = os.path.join(path, filename)
     try:
         agent_model.save(filepath)
-        logging.info('save agent model to {}'.format(filepath))
+        # logging.info('saved agent model to {}'.format(filepath))
     except Exception, e:
         logging.info('Error: Writing model fails: %s' % (filepath,))
         logging.info(e)
@@ -619,8 +628,9 @@ def run_episodes(count):
                     performance_records['ave_turns'][episode], best_res['success_rate']))
 
     if agt == 9 and params['trained_model_path'] is None:
-        save_model(params['write_model_dir'], best_model['model'])
-        save_performance_records(params['write_model_dir'], performance_records)
+        save_model(params['write_model_dir'], best_model['model'], params['filename_of_rl_model'])
+        save_performance_records(params['write_model_dir'], performance_records,
+                                 params['filename_of_performances'])
 
 
 def using_agent_play_conversation_with_user(
@@ -664,7 +674,7 @@ def run():
         run_episodes(num_episodes)
     elif params['to_do_what'] == 'generate_state_action_pairs':
         # 加载 rl 模型，与 environment 交互，生成 state-action 数据集
-        rl_model_path = os.path.join(params['write_model_dir'], 'rl_model.pkl')
+        rl_model_path = os.path.join(params['write_model_dir'], params['filename_of_rl_model'])
         s_a_path = os.path.join(params['write_model_dir'],
                                 's_a_pairs_{}.pkl'.format(
                                     params['conversations_number_for_im_model']))
@@ -672,7 +682,7 @@ def run():
                                                 epochs=params['conversations_number_for_im_model'])
     elif params['to_do_what'] == 'train_im':
         # 基于 state-action 数据集，训练 im 模型
-        rl_model_path = os.path.join(params['write_model_dir'], 'rl_model.pkl')
+        rl_model_path = os.path.join(params['write_model_dir'], params['filename_of_rl_model'])
         im_policy = ImitationPolicy(agent.state_dimension, agent.num_actions, params['device'])
 
         s_a_path = os.path.join(params['write_model_dir'],
@@ -681,7 +691,7 @@ def run():
         im_policy.create_data_loader(s_a_path)
 
         im_policy.train(params['im_train_epochs'])
-        im_model_path = os.path.join(params['write_model_dir'], 'im_model.pkl')
+        im_model_path = os.path.join(params['write_model_dir'], params['filename_of_im_model'])
         im_policy.save(im_model_path)
 
         agent.warm_start = 2
@@ -695,30 +705,46 @@ def run():
             logging.info('{} model validate: {}'.format(method, simulation_res))
     elif params['to_do_what'] == 'validation':
         # load rl model
-        rl_model_path = os.path.join(params['write_model_dir'], 'rl_model.pkl')
+        rl_model_path = os.path.join(params['write_model_dir'], params['filename_of_rl_model'])
         agent.load(rl_model_path)
         # load im model
-        im_model_path = os.path.join(params['write_model_dir'], 'im_model.pkl')
+        im_model_path = os.path.join(params['write_model_dir'], params['filename_of_im_model'])
         im_policy = ImitationPolicy(agent.state_dimension, agent.num_actions, params['device'])
         im_policy.load(im_model_path)
         agent.add_im_policy(im_policy)
         # validation
         agent.warm_start = 2
+        for method in ['rl', 'im']:
+            agent.set_policy_method(method)
+            simulation_res = computer_metrics(params['validation_epoch_size'])
+            logging.info('{} model validate: {}'.format(method, simulation_res))
         for method in ['e']:
             agent.set_policy_method(method)
-            for n in [0.001, 0.01, 0.1, 1, 10]:
+            for n in [0.01, 0.1, 1]:
                 agent.set_exp_param_n(n)
                 simulation_res = computer_metrics(params['validation_epoch_size'])
                 logging.info('{}_{} model validate: {}'.format(method, n, simulation_res))
         for method in ['sample']:
             agent.set_policy_method(method)
-            for c in [0.6, 0.75, 0.9]:
-                for n in [150, 300, 600]:
+            for c in [0.7, 0.8]:
+                for n in [150, 300]:
                     agent.set_sampling_param_c(c)
                     agent.set_sampling_param_n(n)
                     simulation_res = computer_metrics(params['validation_epoch_size'])
                     logging.info(
                         '{}_c{}_n{} model validate: {}'.format(method, c, n, simulation_res))
+
+    if params['to_do_what'] == 'train_rl_with_shaping':
+        # 训练 rl 模型
+
+        im_model_path = os.path.join(params['write_model_dir'], params['filename_of_im_model'])
+        im_policy = ImitationPolicy(agent.state_dimension, agent.num_actions, params['device'])
+        im_policy.load(im_model_path)
+        im_policy.freeze()
+        agent.add_im_policy(im_policy)
+        agent.set_policy_method('sample')
+
+        run_episodes(num_episodes)
 
 
 try:

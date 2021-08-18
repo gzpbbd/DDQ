@@ -10,6 +10,7 @@ Some methods are not consistent with super class Agent.
 @author: Baolin Peng
 '''
 
+import logging
 import random, copy, json
 import cPickle as pickle
 import numpy as np
@@ -419,9 +420,11 @@ class AgentDQN(Agent):
 
     def save(self, filename):
         torch.save(self.dqn.state_dict(), filename)
+        logging.info('saved dqn model to {}'.format(filename))
 
     def load(self, filename):
         self.dqn.load_state_dict(torch.load(filename))
+        logging.info('loaded dqn model from {}'.format(filename))
 
     def reset_dqn_target(self):
         """
