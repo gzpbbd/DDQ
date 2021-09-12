@@ -203,7 +203,7 @@ class AgentDQN(Agent):
         '''
         replay pool未满时使用rule_policy，否则使用DQN_policy
         :param representation:
-        :return:
+        :return: int
         '''
         """ epsilon-greedy policy """
 

@@ -4,6 +4,8 @@ import os
 import argparse
 import json
 from matplotlib import pyplot
+import pandas as pd
+import seaborn as sns
 
 
 def calculate_average_success_rate(result_dir, filename):
@@ -26,13 +28,13 @@ def calculate_average_success_rate(result_dir, filename):
 
     epochs = average_success_rate.keys()
     average_rate = [average_success_rate[epoch] / len(all_result) for epoch in epochs]
-    return average_rate[:400]
+    return average_rate
 
 
 def draw_figures(dirs):
-    ddq = calculate_average_success_rate(result_dir='backup/baseline_ddq_k5_5_agent_800_epoches/',
+    ddq = calculate_average_success_rate(result_dir='baseline/baseline_ddq_k5_5_agent_800_epoches/',
                                          filename='train_performance.json')
-    dqn = calculate_average_success_rate(result_dir='backup/baseline_dqn_k5_5_agent_800_epoches',
+    dqn = calculate_average_success_rate(result_dir='baseline/baseline_dqn_k5_5_agent_800_epoches',
                                          filename='train_performance.json')
 
     # 画图
@@ -42,7 +44,7 @@ def draw_figures(dirs):
 
     for dir in dirs:
         result = calculate_average_success_rate(
-            result_dir=os.path.join('backup', dir),
+            result_dir=os.path.join('result', dir),
             filename='train_performance.json')
         pyplot.plot(epochs, result, label=dir)
 
@@ -52,5 +54,34 @@ def draw_figures(dirs):
     pyplot.show()
 
 
+def read_to_data_frame(result_dir, algorithm, filename):
+    df = pd.DataFrame(columns=['algorithm', 'run_num', 'epoch', 'success_rate'])
+    sub_dir_list = os.listdir(result_dir)
+    for sub_dir in sub_dir_list:  # 对每个子目录的文件
+        # sub_dir_path = os.path.join(result_dir, sub_dir)
+        file_path = os.path.join(result_dir, sub_dir, filename)
+        with open(file_path, 'r') as f:
+            result = json.load(f)  # 读取记录
+            for epoch, success_rate in result['success_rate'].items():
+                df = df.append([{'algorithm': algorithm, 'run_num': sub_dir, 'epoch': int(epoch),
+                                 'success_rate': success_rate}])  # 加入 data frame 中
+    return df
+
+
+def draw_figure_from_data_frame(result_dirs, filename='performance.json'):
+    all_df = []
+    for dir in result_dirs:
+        result_df = read_to_data_frame(dir['dir'], dir['algorithm'], filename)
+        all_df.append(result_df)
+        print len(result_df)
+    df = pd.concat(all_df)
+    df.sort_values(by='run_num', inplace=True)
+    sns.relplot(x='epoch', y='success_rate', hue='algorithm', data=df,
+                kind='line')
+    pyplot.show()
+    return df
+
+
 if __name__ == '__main__':
-    draw_figures(['reduce_world_pool', 'reduce_world_pool-td_err_sample'])
+    draw_figure_from_data_frame([{'dir': 'result/PPO', 'algorithm': 'ppo'}
+                                 ])
