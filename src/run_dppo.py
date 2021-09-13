@@ -380,8 +380,9 @@ def simulation_epoch(total_time_steps=256, record_data_for_ppo=False, record_dat
     res['ave_reward'] = float(cumulative_reward) / dialog_number
     res['ave_turns'] = float(cumulative_turns) / dialog_number
     logging.debug(
-        "collect turn data {}, number of dialog {}, simulation success rate {}, ave reward {}, ave turns {}".format(
-            current_steps, res['dialog_number'], res['success_rate'], res['ave_reward'], res['ave_turns']))
+        "simulation_epoch with {}: collect turn data {}, number of dialog {}, simulation success rate {}, ave reward {}, ave turns {}".format(
+            'user' if use_user else 'world_model', current_steps, res['dialog_number'], res['success_rate'],
+            res['ave_reward'], res['ave_turns']))
     return res
 
 
@@ -432,6 +433,8 @@ def run_episodes(count):
     if agt == 9 and params['trained_model_path'] == None:
         for episode in tqdm(xrange(count), desc=params['write_model_dir'].split('/')[-1],
                             mininterval=5):
+            print ''
+            logging.debug('episode {}'.format(episode))
             # agent.predict_mode = True
             simulation_res = simulation_epoch(1024, record_data_for_ppo=True)
             # agent.predict_mode = False
@@ -480,7 +483,7 @@ def warm_ppo_and_world_model():
     """
     agent.use_rule = True
     memory = PPOMemory()
-    for i in range(100):
+    for i in range(10000):
         agent.ppo.memory.clear()
         dialog_manager.initialize_episode()
         while True:
@@ -516,11 +519,14 @@ def run_episodes_with_world_model(count):
     if agt == 9 and params['trained_model_path'] == None:
         for episode in tqdm(xrange(count), desc=params['write_model_dir'].split('/')[-1],
                             mininterval=5):
-            simulation_res = simulation_epoch(1024, record_data_for_ppo=True, record_data_for_world_model=True,
+            print ''
+            logging.debug('\n\n')
+            logging.debug('episode {}'.format(episode))
+            simulation_res = simulation_epoch(100, record_data_for_ppo=True, record_data_for_world_model=True,
                                               use_user=True)
             agent.train()
             world_model.train()
-            _simulation_res = simulation_epoch(1024, record_data_for_ppo=True, record_data_for_world_model=False,
+            _simulation_res = simulation_epoch(100, record_data_for_ppo=True, record_data_for_world_model=False,
                                                use_user=False)
             agent.train()
 
@@ -540,7 +546,7 @@ def run_episodes_with_world_model(count):
                 best_res['epoch'] = episode
 
             logging.debug(
-                'best: epoch {}, success rate {}, average turns {}'.format(best_res['epoch'], best_res['success_rate'],
+                'best: epoch {:03}, success rate {:.03f}, average turns {}'.format(best_res['epoch'], best_res['success_rate'],
                                                                            best_res['ave_turns']))
 
             # save the model every 10 episodes

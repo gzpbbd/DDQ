@@ -161,7 +161,7 @@ class WorldModelSimulator(UserSimulator):
         reward = torch.from_numpy(np.stack(dataset.reward)).float().unsqueeze(-1)
         term = torch.from_numpy(np.stack(dataset.term).astype(int)).float().unsqueeze(-1)
         user_action = torch.from_numpy(np.stack(dataset.user_action))
-        for i in range(10):
+        for i in range(50):
             perm = torch.randperm(data_size)
             state_shuf, agent_action_shuf, reward_shuf, term_shuf, user_action_shuf = state[perm], agent_action[
                 perm], reward[perm], term[perm], user_action[perm]
@@ -190,26 +190,38 @@ class WorldModelSimulator(UserSimulator):
                 total_loss_r += loss_r.item() / optim_chunk_num
                 total_loss_t += loss_t.item() / optim_chunk_num
                 total_loss_u_a += loss_u_a.item() / optim_chunk_num
-            self.calculate_metrics(state, agent_action, reward, term, user_action)
+            acc_reward, acc_term, acc_user_action = self.calculate_metrics(state, agent_action, reward, term,
+                                                                           user_action)
+
+            logging.debug('training World Model: iteration {}'.format(i))
             logging.debug(
-                'training World Model, iteration {}, loss: reward  {}, term {}, user action {}'.format(i,
-                                                                                                       total_loss_r,
+                '                      loss: reward {:.05f}, term {:.05f}, user action {:.05f}'.format(total_loss_r,
                                                                                                        total_loss_t,
                                                                                                        total_loss_u_a))
 
+            logging.debug(
+                '                      acc_reward {:.03f}, acc_term {:.03f}, acc_user_action {:.03f}'.format(acc_reward,
+                                                                                                             acc_term,
+                                                                                                             acc_user_action))
+            # logging.debug('training World Model: iteration {}'.format(i))
+            # logging.debug('       acc_reward      {:.03f}, reward loss {}'.format(acc_reward, total_loss_r))
+            # logging.debug('       acc_term        {:.03f}, term loss {}'.format(acc_term, total_loss_t))
+            # logging.debug('       acc_user_action {:.03f}, user_action loss {}'.format(acc_user_action, total_loss_u_a))
+
     def calculate_metrics(self, state, agent_action, reward, term, user_action):
-        reward_pred, term_pred, user_action_pred = self.model(state, agent_action)
+        reward_pred, term_pred, user_action_pred = self.model.predict(state, agent_action)
         # for reward
         reward_pred_ = torch.full(reward_pred.shape, -0.1)
         reward_pred_[reward_pred > 1] = 1
         reward_pred_[reward_pred < -1] = -1
-        acc_reward = 1.0*torch.sum(reward_pred_ == reward).item() / len(reward.view(-1))
+        acc_reward = 1.0 * torch.sum(reward_pred_ == reward).item() / len(reward.view(-1))
         # for term
         term = term.int()
         term_pred = term_pred > 0.5
-        acc_term = 1.0*torch.sum(term == term_pred.int()).item() / len(term.view(-1))
+        acc_term = 1.0 * torch.sum(term == term_pred.int()).item() / len(term.view(-1))
         # for user_action
-        pass
+        acc_user_action = 1.0 * torch.sum(user_action == user_action_pred).item() / len(term.view(-1))
+        return acc_reward, acc_term, acc_user_action
 
     def save_experience(self, user_state, agent_action, reward, term, user_action):
         user_state_vec = self.prepare_state_representation(user_state)

@@ -352,10 +352,11 @@ class PPO:
             critic_loss /= optim_chunk_num
             actor_loss /= optim_chunk_num
             accurate = self.calculate_accurate(s, a)
+            logging.debug('training PPO: iteration {}'.format(i))
             logging.debug(
-                'training PPO, iteration {}, critic_loss {}, actor_loss {}, same actions {}'.format(i, critic_loss,
-                                                                                                    actor_loss,
-                                                                                                    accurate))
+                '              critic_loss {:.05f}, actor_loss {:.05f}, same actions {:.05f}'.format(critic_loss,
+                                                                                                     actor_loss,
+                                                                                                     accurate))
 
     def imitate(self):
         batch = self.memory.get_batch()
@@ -380,7 +381,7 @@ class PPO:
                 loss.backward()
                 self.actor_optim.step()
             accurate = self.calculate_accurate(s, a)
-            logging.debug('PPO: accurate {:.3}, imitate loss {}'.format(accurate, actor_loss))
+            logging.debug('PPO: accurate {:.3f}, imitate loss {:.05f}'.format(accurate, actor_loss))
 
     def calculate_accurate(self, state, action):
         a_pred_weigh = self.actor(state)
