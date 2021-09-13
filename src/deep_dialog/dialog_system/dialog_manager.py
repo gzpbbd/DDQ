@@ -103,14 +103,14 @@ class DialogManager:
         self.print_function(agent_action=self.agent_action['act_slot_response'])
 
         #   CALL USER TO TAKE HER TURN
-        self.sys_action = self.state_tracker.dialog_history_dictionaries()[-1]
+        sys_action = self.state_tracker.dialog_history_dictionaries()[-1]
         if self.use_world_model:
             self.user_action, self.episode_over, self.reward = self.running_user.next(
                 self.state_user,
                 self.agent.action)
         else:
             self.user_action, self.episode_over, dialog_status = self.running_user.next(
-                self.sys_action)
+                sys_action)
             self.reward = self.reward_function(dialog_status)
 
         #   Update state tracker with latest user action

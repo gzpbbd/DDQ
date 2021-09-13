@@ -29,7 +29,7 @@ import logging
 import time
 import config
 
-Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'term'))
+PPOTransition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'term'))
 
 
 class AgentPPO(Agent):
@@ -267,7 +267,7 @@ class PPO:
         self.actor_optim = optim.RMSprop(self.actor.parameters(), lr=0.0001)
         self.critic_optim = optim.Adam(self.critic.parameters(), lr=0.00005)
 
-        self.memory = Memory()
+        self.memory = PPOMemory()
         # PPO的参数
         self.gamma = 0.99
         self.tau = 0.95
@@ -351,12 +351,11 @@ class PPO:
 
             critic_loss /= optim_chunk_num
             actor_loss /= optim_chunk_num
+            accurate = self.calculate_accurate(s, a)
             logging.debug(
-                'training PPO, iteration {}, critic_loss {}, actor_loss {}'.format(i, critic_loss,
-                                                                                   actor_loss))
-
-        # if (epoch + 1) % self.save_per_epoch == 0:
-        #     self.save(self.save_dir, epoch)
+                'training PPO, iteration {}, critic_loss {}, actor_loss {}, same actions {}'.format(i, critic_loss,
+                                                                                                    actor_loss,
+                                                                                                    accurate))
 
     def imitate(self):
         batch = self.memory.get_batch()
@@ -511,24 +510,24 @@ class Critic(nn.Module):
         return value
 
 
-Transition = namedtuple('Transition', ('state', 'action', 'reward', 'mask'))
+PPOTransition = namedtuple('Transition', ('state', 'action', 'reward', 'mask'))
 
 
-class Memory(object):
+class PPOMemory(object):
     def __init__(self):
 
         self.memory = []
 
     def push(self, *args):
         """Saves a transition."""
-        self.memory.append(Transition(*args))
+        self.memory.append(PPOTransition(*args))
 
     def get_batch(self, batch_size=None):
         if batch_size is None:
-            return Transition(*zip(*self.memory))
+            return PPOTransition(*zip(*self.memory))
         else:
             random_batch = random.sample(self.memory, batch_size)
-            return Transition(*zip(*random_batch))
+            return PPOTransition(*zip(*random_batch))
 
     def append(self, new_memory):
         self.memory += new_memory.memory

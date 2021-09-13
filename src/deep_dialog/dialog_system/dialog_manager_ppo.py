@@ -14,7 +14,7 @@ import copy
 class DialogManagerPPO:
     """ A dialog manager to mediate the interaction between an agent and a customer """
 
-    def __init__(self, agent, user, act_set, slot_set, movie_dictionary):
+    def __init__(self, agent, user, act_set, slot_set, movie_dictionary, world_model=None):
         self.agent = agent
         self.user = user
         self.act_set = act_set
@@ -23,6 +23,8 @@ class DialogManagerPPO:
         self.user_action = None
         self.reward = 0
         self.episode_over = False
+        # 加入 world model
+        self.world_model = world_model
 
     def initialize_episode(self):
         """ Refresh state for new dialog """
@@ -40,44 +42,111 @@ class DialogManagerPPO:
 
         self.agent.initialize_episode()
 
-    def next_turn(self, record_training_data=True):
+        if self.world_model:
+            self.world_model.sample_goal = self.user.sample_goal
+
+    def next_turn(self, record_data_for_ppo=False, record_data_for_world_model=False):
         """ This function initiates each subsequent exchange between agent and user (agent first) """
 
         ########################################################################
         #   CALL AGENT TO TAKE HER TURN
         ########################################################################
-        self.state = self.state_tracker.get_state_for_agent()
-        self.agent_action = self.agent.state_to_action(self.state)
+        state = self.state_tracker.get_state_for_agent()
+        agent_action = self.agent.state_to_action(state)
 
         ########################################################################
         #   Register AGENT action with the state_tracker
         ########################################################################
-        self.state_tracker.update(agent_action=self.agent_action)
+        self.state_tracker.update(agent_action=agent_action)
+        state_user = self.state_tracker.get_state_for_user()
 
-        self.agent.add_nl_to_action(self.agent_action)  # add NL to Agent Dia_Act
-        self.print_function(agent_action=self.agent_action['act_slot_response'])
+        self.agent.add_nl_to_action(agent_action)  # add NL to Agent Dia_Act
+        self.print_function(agent_action=agent_action['act_slot_response'])
 
         ########################################################################
         #   CALL USER TO TAKE HER TURN
         ########################################################################
-        self.sys_action = self.state_tracker.dialog_history_dictionaries()[-1]
-        self.user_action, self.episode_over, dialog_status = self.user.next(self.sys_action)
+        sys_action = self.state_tracker.dialog_history_dictionaries()[-1]
+        self.user_action, self.episode_over, dialog_status = self.user.next(sys_action)
         self.reward = self.reward_function(dialog_status)
 
         ########################################################################
         #   Update state tracker with latest user action
         ########################################################################
-        if self.episode_over != True:
+        if not self.episode_over:
+            self.state_tracker.update(user_action=self.user_action)
+            self.print_function(user_action=self.user_action)
+
+        state_user_next = self.state_tracker.get_state_for_agent()
+
+        ########################################################################
+        #  Inform agent of the outcome for this timestep (s_t, a_t, r, s_{t+1}, episode_over)
+        ########################################################################
+        if record_data_for_ppo:
+            self.agent.save_experience(state, agent_action, self.reward, self.episode_over)
+        if record_data_for_world_model:
+            self.world_model.save_experience(state_user, self.agent.action, self.reward, self.episode_over,
+                                             self.user_action)
+
+        return self.episode_over, self.reward
+
+    def initialize_episode_with_world_model(self):
+        """ Refresh state for new dialog """
+
+        self.reward = 0
+        self.episode_over = False
+        self.state_tracker.initialize_episode()
+        # user world model
+        self.user_action = self.world_model.initialize_episode()
+        self.state_tracker.update(user_action=self.user_action)
+
+        if dialog_config.run_mode < 3:
+            print ("New episode, user goal:")
+            print json.dumps(self.user.goal, indent=2)
+        self.print_function(user_action=self.user_action)
+
+        self.agent.initialize_episode()
+
+    def next_turn_with_world_model(self, record_data_for_ppo=False):
+        """ This function initiates each subsequent exchange between agent and user (agent first) """
+
+        ########################################################################
+        #   CALL AGENT TO TAKE HER TURN
+        ########################################################################
+        state = self.state_tracker.get_state_for_agent()
+        agent_action = self.agent.state_to_action(state)
+
+        ########################################################################
+        #   Register AGENT action with the state_tracker
+        ########################################################################
+        self.state_tracker.update(agent_action=agent_action)
+
+        self.agent.add_nl_to_action(agent_action)  # add NL to Agent Dia_Act
+        self.print_function(agent_action=agent_action['act_slot_response'])
+
+        ########################################################################
+        #   CALL USER TO TAKE HER TURN
+        ########################################################################
+        # self.user_action, self.episode_over, dialog_status = self.user.next(self.sys_action)
+        # self.reward = self.reward_function(dialog_status)
+        # user world model
+        state_user = self.state_tracker.get_state_for_user()
+        self.user_action, self.episode_over, self.reward = self.world_model.next(state_user, self.agent.action)
+
+        ########################################################################
+        #   Update state tracker with latest user action
+        ########################################################################
+        if not self.episode_over:
             self.state_tracker.update(user_action=self.user_action)
             self.print_function(user_action=self.user_action)
 
         ########################################################################
         #  Inform agent of the outcome for this timestep (s_t, a_t, r, s_{t+1}, episode_over)
         ########################################################################
-        if record_training_data:
-            self.agent.save_experience(self.state, self.agent_action, self.reward, self.episode_over)
+        if record_data_for_ppo:
+            self.agent.save_experience(state, agent_action, self.reward, self.episode_over)
 
-        return (self.episode_over, self.reward)
+        return self.episode_over, self.reward
 
     def reward_function(self, dialog_status):
         """ Reward Function 1: a reward function based on the dialog_status """

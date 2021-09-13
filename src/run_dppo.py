@@ -14,8 +14,9 @@ import cPickle
 from deep_dialog.dialog_system import text_to_dict, DialogManagerPPO
 from deep_dialog.agents import AgentCmd, InformAgent, RequestAllAgent, RandomAgent, EchoAgent, \
     RequestBasicsAgent, AgentPPO, PPOMemory
-from deep_dialog.usersims import RuleSimulator, ModelBasedSimulator
+from deep_dialog.usersims import RuleSimulator
 from deep_dialog.utils import init_logging, calculate_time
+from deep_dialog.usersims.world_model_ppo import WorldModelSimulator
 
 from deep_dialog import dialog_config
 from deep_dialog.dialog_config import *
@@ -244,6 +245,7 @@ if usr == 0:  # real user
     # user_sim = RealUser(movie_dictionary, act_set, slot_set, goal_set, usersim_params)
 elif usr == 1:
     user_sim = RuleSimulator(movie_dictionary, act_set, slot_set, goal_set, usersim_params)
+    world_model = WorldModelSimulator(movie_dictionary, act_set, slot_set, goal_set, usersim_params)
 
 ################################################################################
 #    Add your user simulator here
@@ -262,6 +264,7 @@ nlg_model.load_predefine_act_nl_pairs(diaact_nl_pairs)
 
 agent.set_nlg_model(nlg_model)
 user_sim.set_nlg_model(nlg_model)
+world_model.set_nlg_model(nlg_model)
 
 ################################################################################
 # load trained NLU model
@@ -272,10 +275,11 @@ nlu_model.load_nlu_model(nlu_model_path)
 
 agent.set_nlu_model(nlu_model)
 user_sim.set_nlu_model(nlu_model)
+world_model.set_nlu_model(nlu_model)
 ################################################################################
 # Dialog Manager
 ################################################################################
-dialog_manager = DialogManagerPPO(agent, user_sim, act_set, slot_set, movie_kb)
+dialog_manager = DialogManagerPPO(agent, user_sim, act_set, slot_set, movie_kb, world_model)
 
 ################################################################################
 #   Run num_episodes Conversation Simulations
@@ -330,9 +334,9 @@ def save_performance_records(path, filename, records):
 """ Run N simulation Dialogues """
 
 
-def simulation_epoch(total_time_steps=256, record_data_for_ppo=True):
+def simulation_epoch(total_time_steps=256, record_data_for_ppo=False, record_data_for_world_model=False,
+                     use_user=False):
     """
-    simulation_epoch、simulation_epoch_for_training 只在 initialize_episode 时传入的参数有区别
 
     与 environment 交互 simulation_epoch_size 次。
     每次不为 world model 保存训练数据
@@ -347,11 +351,19 @@ def simulation_epoch(total_time_steps=256, record_data_for_ppo=True):
     # 模拟对话
     current_steps = 0
     while current_steps < total_time_steps:
-        dialog_manager.initialize_episode()
+        if use_user:
+            dialog_manager.initialize_episode()
+        else:
+            dialog_manager.initialize_episode_with_world_model()
         episode_over = False
         episode_reward = 0
         while not episode_over:
-            episode_over, reward = dialog_manager.next_turn(record_data_for_ppo=record_data_for_ppo)
+            if use_user:
+                episode_over, reward = dialog_manager.next_turn(record_data_for_ppo=record_data_for_ppo,
+                                                                record_data_for_world_model=record_data_for_world_model)
+            else:
+                episode_over, reward = dialog_manager.next_turn_with_world_model(
+                    record_data_for_ppo=record_data_for_ppo)
             current_steps += 1
 
             # 记录信息
@@ -398,7 +410,6 @@ def warm_ppo():
     agent.use_rule = False
 
 
-
 @calculate_time
 def run_episodes(count):
     '''
@@ -422,7 +433,7 @@ def run_episodes(count):
         for episode in tqdm(xrange(count), desc=params['write_model_dir'].split('/')[-1],
                             mininterval=5):
             # agent.predict_mode = True
-            simulation_res = simulation_epoch(1024,  True)
+            simulation_res = simulation_epoch(1024, record_data_for_ppo=True)
             # agent.predict_mode = False
             agent.train()
 
@@ -461,5 +472,91 @@ def run_episodes(count):
                                  performance_records)
 
 
-run_episodes(200)
-# run_episodes(num_episodes)
+@calculate_time
+def warm_ppo_and_world_model():
+    """
+    用户与agent对话多轮，保存每轮的对话数据。所有轮次的对话结束后，用保存的对话数据训练 world model
+    :return:
+    """
+    agent.use_rule = True
+    memory = PPOMemory()
+    for i in range(100):
+        agent.ppo.memory.clear()
+        dialog_manager.initialize_episode()
+        while True:
+            episode_over, reward = dialog_manager.next_turn(True, True)
+            if episode_over:
+                if reward > 0:
+                    memory.append(agent.ppo.memory)
+                break
+    agent.ppo.memory = memory
+    logging.debug(
+        'warm phrase: ppo memory {}, world model memory {}'.format(len(agent.ppo.memory), len(world_model.memory)))
+    agent.imitate()
+    world_model.train()
+    agent.use_rule = False
+
+
+@calculate_time
+def run_episodes_with_world_model(count):
+    '''
+
+    :param count: number of episode
+    :return
+    '''
+
+    # 最初时，world_model 与 agent 的 predict_mode == True
+    if agt == 9 and params['trained_model_path'] == None and warm_start == 1:
+        logging.info('warm_start starting ...')
+        # 设置 agent.warm_start = 2，所以之后 agent 是否保存经验只由 agent.predict_mode 控制
+        warm_ppo_and_world_model()
+        logging.info('warm_start finished, start RL training ...')
+
+    # 训练模型，记录结果
+    if agt == 9 and params['trained_model_path'] == None:
+        for episode in tqdm(xrange(count), desc=params['write_model_dir'].split('/')[-1],
+                            mininterval=5):
+            simulation_res = simulation_epoch(1024, record_data_for_ppo=True, record_data_for_world_model=True,
+                                              use_user=True)
+            agent.train()
+            world_model.train()
+            _simulation_res = simulation_epoch(1024, record_data_for_ppo=True, record_data_for_world_model=False,
+                                               use_user=False)
+            agent.train()
+
+            performance_records['success_rate'][episode] = simulation_res['success_rate']
+            performance_records['ave_turns'][episode] = simulation_res['ave_turns']
+            performance_records['ave_reward'][episode] = simulation_res['ave_reward']
+            performance_records['dialog_number'][episode] = simulation_res['dialog_number']
+
+            # 更新最好的指标
+            if simulation_res['success_rate'] > best_res['success_rate']:
+                # best_model['model'] = copy.deepcopy(agent)
+                best_res['model'] = copy.deepcopy(agent)
+                best_res['success_rate'] = simulation_res['success_rate']
+                best_res['ave_reward'] = simulation_res['ave_reward']
+                best_res['ave_turns'] = simulation_res['ave_turns']
+                best_res['dialog_number'] = simulation_res['dialog_number']
+                best_res['epoch'] = episode
+
+            logging.debug(
+                'best: epoch {}, success rate {}, average turns {}'.format(best_res['epoch'], best_res['success_rate'],
+                                                                           best_res['ave_turns']))
+
+            # save the model every 10 episodes
+            if episode % save_check_point == 0 and params['trained_model_path'] == None:
+                filename = 'epoch_{:04}_success_{}_ppo.pkl'.format(episode, best_res['success_rate'])
+                filepath = os.path.join(params['write_model_dir'], filename)
+                agent.save(filepath)
+
+                save_performance_records(params['write_model_dir'], 'performance_epoch{}.json'.format(episode),
+                                         performance_records)
+
+        # 最后结果
+        filepath = os.path.join(params['write_model_dir'], 'best_ppo.pkl')
+        agent.save(filepath)
+        save_performance_records(params['write_model_dir'], 'performance.json',
+                                 performance_records)
+
+
+run_episodes_with_world_model(200)

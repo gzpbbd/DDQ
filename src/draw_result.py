@@ -76,12 +76,12 @@ def draw_figure_from_data_frame(result_dirs, filename='performance.json'):
         print len(result_df)
     df = pd.concat(all_df)
     df.sort_values(by='run_num', inplace=True)
-    sns.relplot(x='epoch', y='success_rate', hue='algorithm', data=df,
+    sns.relplot(x='epoch', y='success_rate', hue='algorithm', data=df[df['epoch'] < 200],
                 kind='line')
     pyplot.show()
     return df
 
 
 if __name__ == '__main__':
-    draw_figure_from_data_frame([{'dir': 'result/PPO', 'algorithm': 'ppo'}
-                                 ])
+    draw_figure_from_data_frame(
+        [{'dir': 'result/PPO', 'algorithm': 'PPO'}, {'dir': 'result/DPPO', 'algorithm': 'DPPO'}])
