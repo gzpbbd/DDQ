@@ -55,7 +55,7 @@ class WorldModelSimulator(UserSimulator):
         self.simulator_act_level = params['simulator_act_level']
         self.learning_phase = params['learning_phase']
 
-        # SimulatorModel 模型结构对应了论文 world model 的描述
+        # SimulatorModel 模型结构对应了论�? world model 的描�?
         self.model = WorldModelNet(self.num_actions_sys, self.state_dimension,
                                    self.num_actions_user, 1)
         self.optimizer = optim.RMSprop(self.model.parameters(), lr=0.001)
@@ -152,7 +152,7 @@ class WorldModelSimulator(UserSimulator):
 
         return self.user_goal_representation
 
-    def train(self):
+    def train(self, epochs=10):
         dataset = self.memory.get_batch()
         data_size = len(self.memory)
         logging.debug('World Model: train on {} samples'.format(data_size))
@@ -161,7 +161,9 @@ class WorldModelSimulator(UserSimulator):
         reward = torch.from_numpy(np.stack(dataset.reward)).float().unsqueeze(-1)
         term = torch.from_numpy(np.stack(dataset.term).astype(int)).float().unsqueeze(-1)
         user_action = torch.from_numpy(np.stack(dataset.user_action))
-        for i in range(50):
+
+        span = epochs // 5
+        for epoch in range(epochs):
             perm = torch.randperm(data_size)
             state_shuf, agent_action_shuf, reward_shuf, term_shuf, user_action_shuf = state[perm], agent_action[
                 perm], reward[perm], term[perm], user_action[perm]
@@ -193,7 +195,7 @@ class WorldModelSimulator(UserSimulator):
             acc_reward, acc_term, acc_user_action = self.calculate_metrics(state, agent_action, reward, term,
                                                                            user_action)
 
-            logging.debug('training World Model: iteration {}'.format(i))
+            logging.debug('training World Model: iteration {}'.format(epoch))
             logging.debug(
                 '                      loss: reward {:.05f}, term {:.05f}, user action {:.05f}'.format(total_loss_r,
                                                                                                        total_loss_t,

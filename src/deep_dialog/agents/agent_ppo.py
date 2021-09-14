@@ -80,7 +80,7 @@ class AgentPPO(Agent):
         '''
 
         :param state: 字典类型
-        :return: numpy 中的 一维向量
+        :return: numpy 中的 一维向�?
         '''
         """ Create the representation for each state """
 
@@ -172,7 +172,7 @@ class AgentPPO(Agent):
     def run_policy(self, representation):
         '''
 
-        :param representation: 一维向量
+        :param representation: 一维向�?
         :return: int
         '''
         if self.use_rule:
@@ -268,7 +268,7 @@ class PPO:
         self.critic_optim = optim.Adam(self.critic.parameters(), lr=0.00005)
 
         self.memory = PPOMemory()
-        # PPO的参数
+        # PPO的参�?
         self.gamma = 0.99
         self.tau = 0.95
         self.epsilon = 0.2
@@ -277,7 +277,7 @@ class PPO:
         mask = 0 if episode_over else 1
         self.memory.push(s_vec, a_vec, r, mask)
 
-    def train(self):
+    def train(self, epochs=10):
         batch = self.memory.get_batch()
         batch_size = len(self.memory)
         self.memory.clear()
@@ -292,7 +292,8 @@ class PPO:
         log_pi_old_sa = self.actor.get_log_prob(s, a).detach()
         A_sa, v_target = self.estimate_advantage(r, v, mask)
 
-        for i in range(10):
+        span = epochs // 5
+        for epoch in range(epochs):
             perm = torch.randperm(batch_size)
             v_target_shuf, A_sa_shuf, s_shuf, a_shuf, log_pi_old_sa_shuf = v_target[perm], A_sa[perm], s[perm], a[perm], \
                                                                            log_pi_old_sa[perm]
@@ -352,13 +353,14 @@ class PPO:
             critic_loss /= optim_chunk_num
             actor_loss /= optim_chunk_num
             accurate = self.calculate_accurate(s, a)
-            logging.debug('training PPO: iteration {}'.format(i))
-            logging.debug(
-                '              critic_loss {:.05f}, actor_loss {:.05f}, same actions {:.05f}'.format(critic_loss,
-                                                                                                     actor_loss,
-                                                                                                     accurate))
+            if epoch % span == 0 or epoch == epochs - 1:
+                logging.debug(
+                    'training PPO: iteration {}, critic_loss {}, actor_loss {}, same actions {}'.format(
+                        epoch, critic_loss,
+                        actor_loss,
+                        accurate))
 
-    def imitate(self):
+    def imitate(self, epochs=10):
         batch = self.memory.get_batch()
         batch_size = len(self.memory)
         self.memory.clear()
@@ -367,7 +369,8 @@ class PPO:
 
         # train actor
         logging.debug('PPO: imitate to {} samples'.format(batch_size))
-        for i in range(10):
+        span = epochs // 5
+        for epoch in range(epochs):
             perm = torch.randperm(batch_size)
             s_shuf, a_shuf = s[perm], a[perm]
             optim_chunk_num = int(math.ceil(batch_size * 1.0 / 64))
@@ -381,7 +384,10 @@ class PPO:
                 loss.backward()
                 self.actor_optim.step()
             accurate = self.calculate_accurate(s, a)
-            logging.debug('PPO: accurate {:.3f}, imitate loss {:.05f}'.format(accurate, actor_loss))
+            if epoch % span == 0 or epoch == epochs - 1:
+                logging.debug(
+                    'PPO: iteration {} accurate {:.3}, imitate loss {}'.format(epoch, accurate,
+                                                                               actor_loss))
 
     def calculate_accurate(self, state, action):
         a_pred_weigh = self.actor(state)

@@ -79,7 +79,7 @@ if __name__ == "__main__":
     parser.add_argument('--intent_err_prob', dest='intent_err_prob', default=0.00, type=float,
                         help='the intent err probability')
 
-    # 9 为 DDQ 论文的模型
+    # 9 �? DDQ 论文的模�?
     parser.add_argument('--agt', dest='agt', default=9, type=int,
                         help='Select an agent: 0 for a command line input, 1-6 for rule based agents')
     parser.add_argument('--usr', dest='usr', default=1, type=int,
@@ -118,13 +118,13 @@ if __name__ == "__main__":
     parser.add_argument('--simulation_epoch_size', dest='simulation_epoch_size', type=int,
                         default=50,
                         help='the size of validation set')
-    # 0： 不预训练 world model。 1: 与 user 交互，预训练 world model。
+    # 0�? 不预训练 world model�? 1: �? user 交互，预训练 world model�?
     parser.add_argument('--warm_start', dest='warm_start', type=int, default=1,
                         help='0: no warm start; 1: warm start for training')
     parser.add_argument('--warm_start_epochs', dest='warm_start_epochs', type=int, default=100,
                         help='the number of epochs for warm start')
     parser.add_argument('--trained_model_path', dest='trained_model_path', type=str, default=None,
-                        help='the path for trained model')  # 如果已有模型，则不进行训练。如果没有模型，则进行训练
+                        help='the path for trained model')  # 如果已有模型，则不进行训练。如果没有模型，则进行训�?
     parser.add_argument('-o', '--write_model_dir', dest='write_model_dir', type=str,
                         default='./deep_dialog/checkpoints/', help='write model to disk')
     parser.add_argument('--save_check_point', dest='save_check_point', type=int, default=10,
@@ -141,7 +141,7 @@ if __name__ == "__main__":
                         help='the number of folders to split the user goal')
     parser.add_argument('--learning_phase', dest='learning_phase', default='all', type=str,
                         help='train/test/all; default is all')
-    # ------------ 以上为 TC-Bot 自带的参数------------
+    # ------------ 以上�? TC-Bot 自带的参�?------------
     args = parser.parse_args()
     params = vars(args)  # 返回args的属性名与属性值构成的字典
 
@@ -312,10 +312,10 @@ performance_records['dialog_number'] = {}
 
 def save_performance_records(path, filename, records):
     """
-    保存 records 到 path/agt_{agt}_performance_records.json
+    保存 records �? path/agt_{agt}_performance_records.json
 
     :param path: 目的目录
-    :param agt: agent 的代号
+    :param agt: agent 的代�?
     :param records:
     :param mode: string. train or test or evaluate
     :return:
@@ -338,11 +338,11 @@ def simulation_epoch(total_time_steps=256, record_data_for_ppo=False, record_dat
                      use_user=False):
     """
 
-    与 environment 交互 simulation_epoch_size 次。
+    �? environment 交互 simulation_epoch_size 次�?
     每次不为 world model 保存训练数据
 
-    :param simulation_epoch_size: 执行多少个 episode
-    :return: 交互的指标。 字典 result。包含keys={'success_rate', 'ave_reward', 'ave_turns'}
+    :param simulation_epoch_size: 执行多少�? episode
+    :return: 交互的指标�? 字典 result。包含keys={'success_rate', 'ave_reward', 'ave_turns'}
     """
     dialog_number = 0
     successes = 0
@@ -380,9 +380,8 @@ def simulation_epoch(total_time_steps=256, record_data_for_ppo=False, record_dat
     res['ave_reward'] = float(cumulative_reward) / dialog_number
     res['ave_turns'] = float(cumulative_turns) / dialog_number
     logging.debug(
-        "simulation_epoch with {}: collect turn data {}, number of dialog {}, simulation success rate {}, ave reward {}, ave turns {}".format(
-            'user' if use_user else 'world_model', current_steps, res['dialog_number'], res['success_rate'],
-            res['ave_reward'], res['ave_turns']))
+        "collect turn data {}, number of dialog {}, simulation success rate {}, ave reward {}, ave turns {}".format(
+            current_steps, res['dialog_number'], res['success_rate'], res['ave_reward'], res['ave_turns']))
     return res
 
 
@@ -422,14 +421,14 @@ def run_episodes(count):
     cumulative_reward = 0
     cumulative_turns = 0
 
-    # 最初时，world_model 与 agent 的 predict_mode == True
+    # 最初时，world_model �? agent �? predict_mode == True
     if agt == 9 and params['trained_model_path'] == None and warm_start == 1:
         logging.info('warm_start starting ...')
-        # 设置 agent.warm_start = 2，所以之后 agent 是否保存经验只由 agent.predict_mode 控制
+        # 设置 agent.warm_start = 2，所以之�? agent 是否保存经验只由 agent.predict_mode 控制
         warm_ppo()
         logging.info('warm_start finished, start RL training ...')
 
-    # 训练模型，记录结果
+    # 训练模型，记录结�?
     if agt == 9 and params['trained_model_path'] == None:
         for episode in tqdm(xrange(count), desc=params['write_model_dir'].split('/')[-1],
                             mininterval=5):
@@ -468,7 +467,7 @@ def run_episodes(count):
                 save_performance_records(params['write_model_dir'], 'performance_epoch{}.json'.format(episode),
                                          performance_records)
 
-        # 最后结果
+        # 最后结�?
         filepath = os.path.join(params['write_model_dir'], 'best_ppo.pkl')
         agent.save(filepath)
         save_performance_records(params['write_model_dir'], 'performance.json',
@@ -483,7 +482,7 @@ def warm_ppo_and_world_model():
     """
     agent.use_rule = True
     memory = PPOMemory()
-    for i in range(10000):
+    for i in range(100):
         agent.ppo.memory.clear()
         dialog_manager.initialize_episode()
         while True:
@@ -508,25 +507,22 @@ def run_episodes_with_world_model(count):
     :return
     '''
 
-    # 最初时，world_model 与 agent 的 predict_mode == True
+    # 最初时，world_model �? agent �? predict_mode == True
     if agt == 9 and params['trained_model_path'] == None and warm_start == 1:
         logging.info('warm_start starting ...')
-        # 设置 agent.warm_start = 2，所以之后 agent 是否保存经验只由 agent.predict_mode 控制
+        # 设置 agent.warm_start = 2，所以之�? agent 是否保存经验只由 agent.predict_mode 控制
         warm_ppo_and_world_model()
         logging.info('warm_start finished, start RL training ...')
 
-    # 训练模型，记录结果
+    # 训练模型，记录结�?
     if agt == 9 and params['trained_model_path'] == None:
         for episode in tqdm(xrange(count), desc=params['write_model_dir'].split('/')[-1],
                             mininterval=5):
-            print ''
-            logging.debug('\n\n')
-            logging.debug('episode {}'.format(episode))
-            simulation_res = simulation_epoch(100, record_data_for_ppo=True, record_data_for_world_model=True,
+            simulation_res = simulation_epoch(1024, record_data_for_ppo=True, record_data_for_world_model=True,
                                               use_user=True)
             agent.train()
             world_model.train()
-            _simulation_res = simulation_epoch(100, record_data_for_ppo=True, record_data_for_world_model=False,
+            _simulation_res = simulation_epoch(1024, record_data_for_ppo=True, record_data_for_world_model=False,
                                                use_user=False)
             agent.train()
 
@@ -546,7 +542,7 @@ def run_episodes_with_world_model(count):
                 best_res['epoch'] = episode
 
             logging.debug(
-                'best: epoch {:03}, success rate {:.03f}, average turns {}'.format(best_res['epoch'], best_res['success_rate'],
+                'best: epoch {}, success rate {}, average turns {}'.format(best_res['epoch'], best_res['success_rate'],
                                                                            best_res['ave_turns']))
 
             # save the model every 10 episodes
@@ -558,7 +554,7 @@ def run_episodes_with_world_model(count):
                 save_performance_records(params['write_model_dir'], 'performance_epoch{}.json'.format(episode),
                                          performance_records)
 
-        # 最后结果
+        # 最后结�?
         filepath = os.path.join(params['write_model_dir'], 'best_ppo.pkl')
         agent.save(filepath)
         save_performance_records(params['write_model_dir'], 'performance.json',
