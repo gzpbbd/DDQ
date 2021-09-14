@@ -79,7 +79,7 @@ if __name__ == "__main__":
     parser.add_argument('--intent_err_prob', dest='intent_err_prob', default=0.00, type=float,
                         help='the intent err probability')
 
-    # 9 �? DDQ 论文的模�?
+    # 9 �? DDQ 论文的模�?
     parser.add_argument('--agt', dest='agt', default=9, type=int,
                         help='Select an agent: 0 for a command line input, 1-6 for rule based agents')
     parser.add_argument('--usr', dest='usr', default=1, type=int,
@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--act_level', dest='act_level', type=int, default=0,
                         help='0 for dia_act level; 1 for NL level')
-    parser.add_argument('--run_mode', dest='run_mode', type=int, default=0,
+    parser.add_argument('--run_mode', dest='run_mode', type=int, default=3,
                         help='run_mode: 0 for default NL; 1 for dia_act; 2 for both')
     parser.add_argument('--auto_suggest', dest='auto_suggest', type=int, default=0,
                         help='0 for no auto_suggest; 1 for auto_suggest')  # 只是增加打印数据库查询结果的信息
@@ -118,13 +118,13 @@ if __name__ == "__main__":
     parser.add_argument('--simulation_epoch_size', dest='simulation_epoch_size', type=int,
                         default=50,
                         help='the size of validation set')
-    # 0�? 不预训练 world model�? 1: �? user 交互，预训练 world model�?
+    # 0�? 不预训练 world model�? 1: �? user 交互，预训练 world model�?
     parser.add_argument('--warm_start', dest='warm_start', type=int, default=1,
                         help='0: no warm start; 1: warm start for training')
     parser.add_argument('--warm_start_epochs', dest='warm_start_epochs', type=int, default=100,
                         help='the number of epochs for warm start')
     parser.add_argument('--trained_model_path', dest='trained_model_path', type=str, default=None,
-                        help='the path for trained model')  # 如果已有模型，则不进行训练。如果没有模型，则进行训�?
+                        help='the path for trained model')  # 如果已有模型，则不进行训练。如果没有模型，则进行训�?
     parser.add_argument('-o', '--write_model_dir', dest='write_model_dir', type=str,
                         default='./deep_dialog/checkpoints/', help='write model to disk')
     parser.add_argument('--save_check_point', dest='save_check_point', type=int, default=10,
@@ -141,7 +141,9 @@ if __name__ == "__main__":
                         help='the number of folders to split the user goal')
     parser.add_argument('--learning_phase', dest='learning_phase', default='all', type=str,
                         help='train/test/all; default is all')
-    # ------------ 以上�? TC-Bot 自带的参�?------------
+    # ------------ 以上�? TC-Bot 自带的参�?------------
+    parser.add_argument('--algorithm', default='PPO', type=str, help='PPO/DPPO; default is PPO')
+
     args = parser.parse_args()
     params = vars(args)  # 返回args的属性名与属性值构成的字典
 
@@ -312,10 +314,10 @@ performance_records['dialog_number'] = {}
 
 def save_performance_records(path, filename, records):
     """
-    保存 records �? path/agt_{agt}_performance_records.json
+    保存 records �? path/agt_{agt}_performance_records.json
 
     :param path: 目的目录
-    :param agt: agent 的代�?
+    :param agt: agent 的代�?
     :param records:
     :param mode: string. train or test or evaluate
     :return:
@@ -325,7 +327,7 @@ def save_performance_records(path, filename, records):
     filepath = os.path.join(path, filename)
     try:
         json.dump(records, open(filepath, "wb"), indent=4)
-        logging.info('saved performance in %s' % (filepath,))
+        logging.info('Saved performance in %s' % (filepath,))
     except Exception, e:
         logging.error('Error: Writing performance fails: %s' % (filepath,))
         logging.error(e)
@@ -334,15 +336,15 @@ def save_performance_records(path, filename, records):
 """ Run N simulation Dialogues """
 
 
-def simulation_epoch(total_time_steps=256, record_data_for_ppo=False, record_data_for_world_model=False,
-                     use_user=False):
+def simulation_epoch(total_time_steps=1024, record_data_for_ppo=False,
+                     record_data_for_world_model=False, use_user=True):
     """
 
-    �? environment 交互 simulation_epoch_size 次�?
-    每次不为 world model 保存训练数据
-
-    :param simulation_epoch_size: 执行多少�? episode
-    :return: 交互的指标�? 字典 result。包含keys={'success_rate', 'ave_reward', 'ave_turns'}
+    :param total_time_steps:
+    :param record_data_for_ppo:
+    :param record_data_for_world_model:
+    :param use_user:
+    :return: 交互的指标, 字典 result。包含keys={'success_rate', 'ave_reward', 'ave_turns'}
     """
     dialog_number = 0
     successes = 0
@@ -359,13 +361,15 @@ def simulation_epoch(total_time_steps=256, record_data_for_ppo=False, record_dat
         episode_reward = 0
         while not episode_over:
             if use_user:
-                episode_over, reward = dialog_manager.next_turn(record_data_for_ppo=record_data_for_ppo,
-                                                                record_data_for_world_model=record_data_for_world_model)
+                episode_over, reward = dialog_manager.next_turn(
+                    record_data_for_ppo=record_data_for_ppo,
+                    record_data_for_world_model=record_data_for_world_model)
             else:
                 episode_over, reward = dialog_manager.next_turn_with_world_model(
                     record_data_for_ppo=record_data_for_ppo)
-            current_steps += 1
 
+            current_steps += 1
+            episode_reward += reward
             # 记录信息
             if episode_over:
                 cumulative_reward += episode_reward
@@ -380,8 +384,10 @@ def simulation_epoch(total_time_steps=256, record_data_for_ppo=False, record_dat
     res['ave_reward'] = float(cumulative_reward) / dialog_number
     res['ave_turns'] = float(cumulative_turns) / dialog_number
     logging.debug(
-        "collect turn data {}, number of dialog {}, simulation success rate {}, ave reward {}, ave turns {}".format(
-            current_steps, res['dialog_number'], res['success_rate'], res['ave_reward'], res['ave_turns']))
+        "Collect data: with {}, turn {}, number of dialog {}, simulation success rate {}, "
+        "ave reward {}, ave turns {}".format('User' if use_user else 'World Model', current_steps,
+                                             res['dialog_number'], res['success_rate'],
+                                             res['ave_reward'], res['ave_turns']))
     return res
 
 
@@ -389,14 +395,14 @@ def simulation_epoch(total_time_steps=256, record_data_for_ppo=False, record_dat
 
 
 @calculate_time
-def warm_ppo():
+def warm_ppo(episodes=1000):
     """
     用户与agent对话多轮，保存每轮的对话数据。所有轮次的对话结束后，用保存的对话数据训练 world model
     :return:
     """
     agent.use_rule = True
     memory = PPOMemory()
-    for i in range(100):
+    for i in range(episodes):
         agent.ppo.memory.clear()
         dialog_manager.initialize_episode()
         while True:
@@ -411,29 +417,25 @@ def warm_ppo():
 
 
 @calculate_time
-def run_episodes(count):
+def run_episodes(episodes):
     '''
 
-    :param count: number of episode
+    :param episodes: number of episode
     :return
     '''
-    successes = 0
-    cumulative_reward = 0
-    cumulative_turns = 0
-
-    # 最初时，world_model �? agent �? predict_mode == True
+    # 最初时，world_model �? agent �? predict_mode == True
     if agt == 9 and params['trained_model_path'] == None and warm_start == 1:
-        logging.info('warm_start starting ...')
-        # 设置 agent.warm_start = 2，所以之�? agent 是否保存经验只由 agent.predict_mode 控制
-        warm_ppo()
+        logging.info('Running warm_start')
+        # 设置 agent.warm_start = 2，所以之�? agent 是否保存经验只由 agent.predict_mode 控制
+        warm_ppo(1000)
         logging.info('warm_start finished, start RL training ...')
 
-    # 训练模型，记录结�?
+    # 训练模型，记录结�?
     if agt == 9 and params['trained_model_path'] == None:
-        for episode in tqdm(xrange(count), desc=params['write_model_dir'].split('/')[-1],
+        for episode in tqdm(xrange(episodes), desc=params['write_model_dir'].split('/')[-1],
                             mininterval=5):
-            print ''
-            logging.debug('episode {}'.format(episode))
+            print '\n\n'
+            logging.debug('current episode {}/{}'.format(episode, episodes))
             # agent.predict_mode = True
             simulation_res = simulation_epoch(1024, record_data_for_ppo=True)
             # agent.predict_mode = False
@@ -455,19 +457,22 @@ def run_episodes(count):
                 best_res['epoch'] = episode
 
             logging.debug(
-                'best: epoch {}, success rate {}, average turns {}'.format(best_res['epoch'], best_res['success_rate'],
+                'Best: epoch {}, success rate {}, average turns {}'.format(best_res['epoch'],
+                                                                           best_res['success_rate'],
                                                                            best_res['ave_turns']))
 
             # save the model every 10 episodes
             if episode % save_check_point == 0 and params['trained_model_path'] == None:
-                filename = 'epoch_{:04}_success_{}_ppo.pkl'.format(episode, best_res['success_rate'])
+                filename = 'epoch_{:04}_success_{}_ppo.pkl'.format(episode,
+                                                                   best_res['success_rate'])
                 filepath = os.path.join(params['write_model_dir'], filename)
                 agent.save(filepath)
 
-                save_performance_records(params['write_model_dir'], 'performance_epoch{}.json'.format(episode),
+                save_performance_records(params['write_model_dir'],
+                                         'performance_epoch{}.json'.format(episode),
                                          performance_records)
 
-        # 最后结�?
+        # 最后结�?
         filepath = os.path.join(params['write_model_dir'], 'best_ppo.pkl')
         agent.save(filepath)
         save_performance_records(params['write_model_dir'], 'performance.json',
@@ -475,14 +480,14 @@ def run_episodes(count):
 
 
 @calculate_time
-def warm_ppo_and_world_model():
+def warm_ppo_and_world_model(episodes=1000):
     """
     用户与agent对话多轮，保存每轮的对话数据。所有轮次的对话结束后，用保存的对话数据训练 world model
     :return:
     """
     agent.use_rule = True
     memory = PPOMemory()
-    for i in range(100):
+    for i in range(episodes):
         agent.ppo.memory.clear()
         dialog_manager.initialize_episode()
         while True:
@@ -493,36 +498,41 @@ def warm_ppo_and_world_model():
                 break
     agent.ppo.memory = memory
     logging.debug(
-        'warm phrase: ppo memory {}, world model memory {}'.format(len(agent.ppo.memory), len(world_model.memory)))
+        'Warm phrase: ppo memory {}, world model memory {}'.format(len(agent.ppo.memory),
+                                                                   len(world_model.memory)))
     agent.imitate()
     world_model.train()
     agent.use_rule = False
 
 
 @calculate_time
-def run_episodes_with_world_model(count):
+def run_episodes_with_world_model(episodes):
     '''
 
-    :param count: number of episode
+    :param episodes: number of episode
     :return
     '''
 
-    # 最初时，world_model �? agent �? predict_mode == True
+    # 最初时，world_model �? agent �? predict_mode == True
     if agt == 9 and params['trained_model_path'] == None and warm_start == 1:
         logging.info('warm_start starting ...')
-        # 设置 agent.warm_start = 2，所以之�? agent 是否保存经验只由 agent.predict_mode 控制
-        warm_ppo_and_world_model()
+        # 设置 agent.warm_start = 2，所以之�? agent 是否保存经验只由 agent.predict_mode 控制
+        warm_ppo_and_world_model(1000)
         logging.info('warm_start finished, start RL training ...')
 
-    # 训练模型，记录结�?
+    # 训练模型，记录结�?
     if agt == 9 and params['trained_model_path'] == None:
-        for episode in tqdm(xrange(count), desc=params['write_model_dir'].split('/')[-1],
+        for episode in tqdm(xrange(episodes), desc=params['write_model_dir'].split('/')[-1],
                             mininterval=5):
-            simulation_res = simulation_epoch(1024, record_data_for_ppo=True, record_data_for_world_model=True,
+            print '\n\n'
+            logging.debug('Current episode {}/{}'.format(episode, episodes))
+            simulation_res = simulation_epoch(1024, record_data_for_ppo=True,
+                                              record_data_for_world_model=True,
                                               use_user=True)
             agent.train()
             world_model.train()
-            _simulation_res = simulation_epoch(1024, record_data_for_ppo=True, record_data_for_world_model=False,
+            _simulation_res = simulation_epoch(1024, record_data_for_ppo=True,
+                                               record_data_for_world_model=False,
                                                use_user=False)
             agent.train()
 
@@ -542,23 +552,31 @@ def run_episodes_with_world_model(count):
                 best_res['epoch'] = episode
 
             logging.debug(
-                'best: epoch {}, success rate {}, average turns {}'.format(best_res['epoch'], best_res['success_rate'],
+                'Best: epoch {}, success rate {}, average turns {}'.format(best_res['epoch'],
+                                                                           best_res['success_rate'],
                                                                            best_res['ave_turns']))
 
             # save the model every 10 episodes
             if episode % save_check_point == 0 and params['trained_model_path'] == None:
-                filename = 'epoch_{:04}_success_{}_ppo.pkl'.format(episode, best_res['success_rate'])
+                filename = 'epoch_{:04}_success_{}_ppo.pkl'.format(episode,
+                                                                   best_res['success_rate'])
                 filepath = os.path.join(params['write_model_dir'], filename)
                 agent.save(filepath)
 
-                save_performance_records(params['write_model_dir'], 'performance_epoch{}.json'.format(episode),
+                save_performance_records(params['write_model_dir'],
+                                         'performance_epoch{}.json'.format(episode),
                                          performance_records)
 
-        # 最后结�?
+        # 最后结�?
         filepath = os.path.join(params['write_model_dir'], 'best_ppo.pkl')
         agent.save(filepath)
         save_performance_records(params['write_model_dir'], 'performance.json',
                                  performance_records)
 
 
-run_episodes_with_world_model(200)
+if params['algorithm'] == 'PPO':
+    run_episodes(200)
+elif params['algorithm'] == 'DPPO':
+    run_episodes_with_world_model(200)
+else:
+    logging.error('No algorithm called {}'.format(params['algorithm']))

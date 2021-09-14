@@ -15,7 +15,8 @@ import config
 from torch import nn
 import math
 
-WorldModelTransition = namedtuple('Transition', ('state', 'agent_action', 'reward', 'term', 'user_action'))
+WorldModelTransition = namedtuple('Transition',
+                                  ('state', 'agent_action', 'reward', 'term', 'user_action'))
 
 
 class WorldModelSimulator(UserSimulator):
@@ -55,7 +56,7 @@ class WorldModelSimulator(UserSimulator):
         self.simulator_act_level = params['simulator_act_level']
         self.learning_phase = params['learning_phase']
 
-        # SimulatorModel 模型结构对应了论�? world model 的描�?
+        # SimulatorModel 模型结构对应了论�? world model 的描�?
         self.model = WorldModelNet(self.num_actions_sys, self.state_dimension,
                                    self.num_actions_user, 1)
         self.optimizer = optim.RMSprop(self.model.parameters(), lr=0.001)
@@ -165,8 +166,13 @@ class WorldModelSimulator(UserSimulator):
         span = epochs // 5
         for epoch in range(epochs):
             perm = torch.randperm(data_size)
-            state_shuf, agent_action_shuf, reward_shuf, term_shuf, user_action_shuf = state[perm], agent_action[
-                perm], reward[perm], term[perm], user_action[perm]
+            state_shuf, agent_action_shuf, reward_shuf, term_shuf, user_action_shuf = state[perm], \
+                                                                                      agent_action[
+                                                                                          perm], \
+                                                                                      reward[perm], \
+                                                                                      term[perm], \
+                                                                                      user_action[
+                                                                                          perm]
             optim_chunk_num = int(math.ceil(data_size * 1.0 / 64))
             state_shuf = torch.chunk(state_shuf, optim_chunk_num)
             agent_action_shuf = torch.chunk(agent_action_shuf, optim_chunk_num)
@@ -177,8 +183,10 @@ class WorldModelSimulator(UserSimulator):
             total_loss_r = 0.
             total_loss_t = 0.
             total_loss_u_a = 0.
-            for state_b, agent_action_b, reward_b, term_b, user_action_b in zip(state_shuf, agent_action_shuf,
-                                                                                reward_shuf, term_shuf,
+            for state_b, agent_action_b, reward_b, term_b, user_action_b in zip(state_shuf,
+                                                                                agent_action_shuf,
+                                                                                reward_shuf,
+                                                                                term_shuf,
                                                                                 user_action_shuf):
                 self.optimizer.zero_grad()
                 reward_, term_, user_action_ = self.model(state_b, agent_action_b)
@@ -192,19 +200,20 @@ class WorldModelSimulator(UserSimulator):
                 total_loss_r += loss_r.item() / optim_chunk_num
                 total_loss_t += loss_t.item() / optim_chunk_num
                 total_loss_u_a += loss_u_a.item() / optim_chunk_num
-            acc_reward, acc_term, acc_user_action = self.calculate_metrics(state, agent_action, reward, term,
-                                                                           user_action)
 
-            logging.debug('training World Model: iteration {}'.format(epoch))
-            logging.debug(
-                '                      loss: reward {:.05f}, term {:.05f}, user action {:.05f}'.format(total_loss_r,
-                                                                                                       total_loss_t,
-                                                                                                       total_loss_u_a))
+            if epoch % span == 0 or epoch == epochs - 1:
+                acc_reward, acc_term, acc_user_action = self.calculate_metrics(state, agent_action,
+                                                                               reward, term,
+                                                                               user_action)
 
-            logging.debug(
-                '                      acc_reward {:.03f}, acc_term {:.03f}, acc_user_action {:.03f}'.format(acc_reward,
-                                                                                                             acc_term,
-                                                                                                             acc_user_action))
+                logging.debug('Training World Model: iteration {}/{}'.format(epoch, epochs))
+                logging.debug(
+                    '                      loss: reward {:.05f}, term {:.05f}, user action {:.05f}'.format(
+                        total_loss_r, total_loss_t, total_loss_u_a))
+
+                logging.debug(
+                    '                      acc_reward {:.03f}, acc_term {:.03f}, acc_user_action {:.03f}'.format(
+                        acc_reward, acc_term, acc_user_action))
             # logging.debug('training World Model: iteration {}'.format(i))
             # logging.debug('       acc_reward      {:.03f}, reward loss {}'.format(acc_reward, total_loss_r))
             # logging.debug('       acc_term        {:.03f}, term loss {}'.format(acc_term, total_loss_t))
@@ -222,7 +231,8 @@ class WorldModelSimulator(UserSimulator):
         term_pred = term_pred > 0.5
         acc_term = 1.0 * torch.sum(term == term_pred.int()).item() / len(term.view(-1))
         # for user_action
-        acc_user_action = 1.0 * torch.sum(user_action == user_action_pred).item() / len(term.view(-1))
+        acc_user_action = 1.0 * torch.sum(user_action == user_action_pred).item() / len(
+            term.view(-1))
         return acc_reward, acc_term, acc_user_action
 
     def save_experience(self, user_state, agent_action, reward, term, user_action):

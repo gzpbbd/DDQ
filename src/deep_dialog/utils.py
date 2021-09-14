@@ -28,9 +28,9 @@ def init_logging(filepath='./log/output.log', log_level=logging.DEBUG):
     logging.getLogger().addHandler(file_handler)
     logging.getLogger().addHandler(console_handler)
 
-    logging.debug('current work path: {}'.format(os.getcwd()))
-    logging.debug('command: {} -u {}'.format(sys.executable, ' '.join(sys.argv)))
-    logging.debug('write log to {}\n'.format(abs_path))
+    logging.debug('Current work path: {}'.format(os.getcwd()))
+    logging.debug('Command: {} -u {}'.format(sys.executable, ' '.join(sys.argv)))
+    logging.debug('Log file: {}\n'.format(abs_path))
 
 
 # 装饰器：在定义其他函数时在前一行加入 "@calculate_time"

@@ -84,4 +84,5 @@ def draw_figure_from_data_frame(result_dirs, filename='performance.json'):
 
 if __name__ == '__main__':
     draw_figure_from_data_frame(
-        [{'dir': 'result/PPO', 'algorithm': 'PPO'}, {'dir': 'result/DPPO', 'algorithm': 'DPPO'}])
+        [{'dir': 'result/_PPO', 'algorithm': 'PPO_1000'},
+         {'dir': 'result/PPO', 'algorithm': 'PPO_10000'}])

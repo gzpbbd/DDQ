@@ -80,7 +80,7 @@ class AgentPPO(Agent):
         '''
 
         :param state: 字典类型
-        :return: numpy 中的 一维向�?
+        :return: numpy 中的 一维向�?
         '''
         """ Create the representation for each state """
 
@@ -150,7 +150,8 @@ class AgentPPO(Agent):
         ########################################################################
         #   Representation of KB results (scaled counts)
         ########################################################################
-        kb_count_rep = np.zeros((1, self.slot_cardinality + 1)) + kb_results_dict['matching_all_constraints'] / 100.
+        kb_count_rep = np.zeros((1, self.slot_cardinality + 1)) + kb_results_dict[
+            'matching_all_constraints'] / 100.
         for slot in kb_results_dict:
             if slot in self.slot_set:
                 kb_count_rep[0, self.slot_set[slot]] = kb_results_dict[slot] / 100.
@@ -165,14 +166,16 @@ class AgentPPO(Agent):
                 kb_binary_rep[0, self.slot_set[slot]] = np.sum(kb_results_dict[slot] > 0.)
 
         self.final_representation = np.hstack(
-            [user_act_rep, user_inform_slots_rep, user_request_slots_rep, agent_act_rep, agent_inform_slots_rep,
-             agent_request_slots_rep, current_slots_rep, turn_rep, turn_onehot_rep, kb_binary_rep, kb_count_rep])
+            [user_act_rep, user_inform_slots_rep, user_request_slots_rep, agent_act_rep,
+             agent_inform_slots_rep,
+             agent_request_slots_rep, current_slots_rep, turn_rep, turn_onehot_rep, kb_binary_rep,
+             kb_count_rep])
         return self.final_representation
 
     def run_policy(self, representation):
         '''
 
-        :param representation: 一维向�?
+        :param representation: 一维向�?
         :return: int
         '''
         if self.use_rule:
@@ -192,7 +195,8 @@ class AgentPPO(Agent):
             act_slot_response['inform_slots'] = {}
             act_slot_response['request_slots'] = {slot: "UNK"}
         elif self.phase == 0:
-            act_slot_response = {'diaact': "inform", 'inform_slots': {'taskcomplete': "PLACEHOLDER"},
+            act_slot_response = {'diaact': "inform",
+                                 'inform_slots': {'taskcomplete': "PLACEHOLDER"},
                                  'request_slots': {}}
             self.phase += 1
         elif self.phase == 1:
@@ -248,16 +252,16 @@ class AgentPPO(Agent):
         trained_file = pickle.load(open(path, 'rb'))
         model = trained_file['model']
 
-        print "trained DQN Parameters:", json.dumps(trained_file['params'], indent=2)
+        print "Trained DQN Parameters:", json.dumps(trained_file['params'], indent=2)
         return model
 
     def save(self, filename):
         self.ppo.save(filename)
-        logging.debug('saved PPO model to {}'.format(filename))
+        logging.debug('Saved PPO model to {}'.format(filename))
 
     def load(self, filename):
         self.ppo.load(filename)
-        logging.debug('loaded PPO model to {}'.format(filename))
+        logging.debug('Loaded PPO model to {}'.format(filename))
 
 
 class PPO:
@@ -268,7 +272,7 @@ class PPO:
         self.critic_optim = optim.Adam(self.critic.parameters(), lr=0.00005)
 
         self.memory = PPOMemory()
-        # PPO的参�?
+        # PPO的参�?
         self.gamma = 0.99
         self.tau = 0.95
         self.epsilon = 0.2
@@ -295,17 +299,24 @@ class PPO:
         span = epochs // 5
         for epoch in range(epochs):
             perm = torch.randperm(batch_size)
-            v_target_shuf, A_sa_shuf, s_shuf, a_shuf, log_pi_old_sa_shuf = v_target[perm], A_sa[perm], s[perm], a[perm], \
+            v_target_shuf, A_sa_shuf, s_shuf, a_shuf, log_pi_old_sa_shuf = v_target[perm], A_sa[
+                perm], s[perm], a[perm], \
                                                                            log_pi_old_sa[perm]
             optim_chunk_num = int(math.ceil(batch_size * 1.0 / 64))
-            v_target_shuf, A_sa_shuf, s_shuf, a_shuf, log_pi_old_sa_shuf = torch.chunk(v_target_shuf, optim_chunk_num), \
-                                                                           torch.chunk(A_sa_shuf, optim_chunk_num), \
-                                                                           torch.chunk(s_shuf, optim_chunk_num), \
-                                                                           torch.chunk(a_shuf, optim_chunk_num), \
-                                                                           torch.chunk(log_pi_old_sa_shuf,
-                                                                                       optim_chunk_num)
+            v_target_shuf, A_sa_shuf, s_shuf, a_shuf, log_pi_old_sa_shuf = torch.chunk(
+                v_target_shuf, optim_chunk_num), \
+                                                                           torch.chunk(A_sa_shuf,
+                                                                                       optim_chunk_num), \
+                                                                           torch.chunk(s_shuf,
+                                                                                       optim_chunk_num), \
+                                                                           torch.chunk(a_shuf,
+                                                                                       optim_chunk_num), \
+                                                                           torch.chunk(
+                                                                               log_pi_old_sa_shuf,
+                                                                               optim_chunk_num)
             actor_loss, critic_loss = 0., 0.
-            for v_target_b, A_sa_b, s_b, a_b, log_pi_old_sa_b in zip(v_target_shuf, A_sa_shuf, s_shuf, a_shuf,
+            for v_target_b, A_sa_b, s_b, a_b, log_pi_old_sa_b in zip(v_target_shuf, A_sa_shuf,
+                                                                     s_shuf, a_shuf,
                                                                      log_pi_old_sa_shuf):
                 # 1. update critic network
                 self.critic_optim.zero_grad()
@@ -355,10 +366,8 @@ class PPO:
             accurate = self.calculate_accurate(s, a)
             if epoch % span == 0 or epoch == epochs - 1:
                 logging.debug(
-                    'training PPO: iteration {}, critic_loss {}, actor_loss {}, same actions {}'.format(
-                        epoch, critic_loss,
-                        actor_loss,
-                        accurate))
+                    'Training PPO: iteration {}/{}, critic_loss {}, actor_loss {}, same actions {}'.format(
+                        epoch, epochs, critic_loss, actor_loss, accurate))
 
     def imitate(self, epochs=10):
         batch = self.memory.get_batch()
@@ -374,7 +383,8 @@ class PPO:
             perm = torch.randperm(batch_size)
             s_shuf, a_shuf = s[perm], a[perm]
             optim_chunk_num = int(math.ceil(batch_size * 1.0 / 64))
-            s_shuf, a_shuf = torch.chunk(s_shuf, optim_chunk_num), torch.chunk(a_shuf, optim_chunk_num)
+            s_shuf, a_shuf = torch.chunk(s_shuf, optim_chunk_num), torch.chunk(a_shuf,
+                                                                               optim_chunk_num)
             actor_loss = 0
             for s_b, a_b in zip(s_shuf, a_shuf):
                 self.actor_optim.zero_grad()
@@ -386,8 +396,9 @@ class PPO:
             accurate = self.calculate_accurate(s, a)
             if epoch % span == 0 or epoch == epochs - 1:
                 logging.debug(
-                    'PPO: iteration {} accurate {:.3}, imitate loss {}'.format(epoch, accurate,
-                                                                               actor_loss))
+                    'PPO: iteration {}/{}, accurate {:.3}, imitate loss {}'.format(epoch, epochs,
+                                                                                  accurate,
+                                                                                  actor_loss))
 
     def calculate_accurate(self, state, action):
         a_pred_weigh = self.actor(state)
