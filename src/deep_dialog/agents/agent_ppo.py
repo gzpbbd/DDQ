@@ -396,7 +396,7 @@ class PPO:
             accurate = self.calculate_accurate(s, a)
             if epoch % span == 0 or epoch == epochs - 1:
                 logging.debug(
-                    'PPO: iteration {}/{}, accurate {:.3}, imitate loss {}'.format(epoch, epochs,
+                    'PPO: iteration {}/{}, accurate {:.3f}, imitate loss {}'.format(epoch, epochs,
                                                                                   accurate,
                                                                                   actor_loss))
 

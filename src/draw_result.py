@@ -55,16 +55,22 @@ def draw_figures(dirs):
 
 
 def read_to_data_frame(result_dir, algorithm, filename):
-    df = pd.DataFrame(columns=['algorithm', 'run_num', 'epoch', 'success_rate'])
+    df = pd.DataFrame(columns=['algorithm', 'run_num', 'epoch', 'success_rate', 'environment'])
     sub_dir_list = os.listdir(result_dir)
     for sub_dir in sub_dir_list:  # 对每个子目录的文件
         # sub_dir_path = os.path.join(result_dir, sub_dir)
         file_path = os.path.join(result_dir, sub_dir, filename)
         with open(file_path, 'r') as f:
             result = json.load(f)  # 读取记录
+            # 加入 data frame 中
             for epoch, success_rate in result['success_rate'].items():
                 df = df.append([{'algorithm': algorithm, 'run_num': sub_dir, 'epoch': int(epoch),
-                                 'success_rate': success_rate}])  # 加入 data frame 中
+                                 'success_rate': success_rate, 'environment': 'user'}])
+            if 'success_rate_with_world_model' not in result.keys():
+                continue
+            for epoch, success_rate in result['success_rate_with_world_model'].items():
+                df = df.append([{'algorithm': algorithm, 'run_num': sub_dir, 'epoch': int(epoch),
+                                 'success_rate': success_rate, 'environment': 'world_model'}])
     return df
 
 
@@ -76,13 +82,22 @@ def draw_figure_from_data_frame(result_dirs, filename='performance.json'):
         print len(result_df)
     df = pd.concat(all_df)
     df.sort_values(by='run_num', inplace=True)
-    sns.relplot(x='epoch', y='success_rate', hue='algorithm', data=df[df['epoch'] < 200],
+
+    selected_df = df
+    # selected_df = selected_df[(selected_df['epoch'] < 100)]
+    # selected_df = selected_df[(selected_df['environment'] == 'user')]
+    sns.relplot(x='epoch', y='success_rate', hue='environment', col='algorithm', data=selected_df,
                 kind='line')
     pyplot.show()
     return df
 
 
 if __name__ == '__main__':
+    # draw_figure_from_data_frame(
+    #     [{'dir': 'result/DPPO/DPPO_warm_1000_run_100_reward_0.5_WM_2_30_3000',
+    #       'algorithm': 'DPPO'}, ])
     draw_figure_from_data_frame(
-        [{'dir': 'result/_PPO', 'algorithm': 'PPO_1000'},
-         {'dir': 'result/PPO', 'algorithm': 'PPO_10000'}])
+        [{'dir': 'result/DPPO/DPPO_warm_1000_run_100_reward_0.5_WM_2_30_3000',
+          'algorithm': 'WM_2_30_3000'},
+         {'dir': 'result/DPPO/DPPO_warm_1000_run_100_reward_threshold_0.5_WM_4_30_5000',
+          'algorithm': 'WM_4_30_5000'}])

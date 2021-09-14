@@ -57,11 +57,12 @@ class WorldModelSimulator(UserSimulator):
         self.learning_phase = params['learning_phase']
 
         # SimulatorModel 模型结构对应了论�? world model 的描�?
-        self.model = WorldModelNet(self.num_actions_sys, self.state_dimension,
-                                   self.num_actions_user, 1)
+        self.model = WorldModeSingleNet(self.num_actions_sys, self.state_dimension,
+                                        self.num_actions_user, 1)
         self.optimizer = optim.RMSprop(self.model.parameters(), lr=0.001)
         # 关于DPPO
         self.memory = WorldModelMemory()
+        self.reward_threshold = 0.5
 
     def initialize_episode(self):
         """ Initialize a new episode (dialog)
@@ -138,7 +139,7 @@ class WorldModelSimulator(UserSimulator):
         self.sample_goal = random.choice(self.start_set[self.learning_phase])
         return self.sample_goal
 
-    def prepare_user_goal_representation(self, user_goal):
+    def _prepare_user_goal_representation(self, user_goal):
         """"""
 
         request_slots_rep = np.zeros((1, self.slot_cardinality))
@@ -153,46 +154,77 @@ class WorldModelSimulator(UserSimulator):
 
         return self.user_goal_representation
 
-    def train(self, epochs=10):
+    def _create_dataset(self):
+        '''
+        根据 memory 创建数据集
+
+        :return:
+            state: [n, state_dimension]
+            agent_action: [n, 1]
+            reward: [n, 1]
+            term: [n, 1]
+            user_action: [n, 1]
+        '''
         dataset = self.memory.get_batch()
-        data_size = len(self.memory)
-        logging.debug('World Model: train on {} samples'.format(data_size))
         state = torch.from_numpy(np.stack(dataset.state)).float()
-        agent_action = torch.from_numpy(np.stack(dataset.agent_action))
+        agent_action = torch.from_numpy(np.stack(dataset.agent_action)).unsqueeze(-1)
         reward = torch.from_numpy(np.stack(dataset.reward)).float().unsqueeze(-1)
         term = torch.from_numpy(np.stack(dataset.term).astype(int)).float().unsqueeze(-1)
-        user_action = torch.from_numpy(np.stack(dataset.user_action))
+        user_action = torch.from_numpy(np.stack(dataset.user_action)).unsqueeze(-1)
+        return state, agent_action, reward, term, user_action
+
+    def _shuffle_and_chunk_dataset(self, state, agent_action, reward, term, user_action):
+        """
+        接收 self._create_dataset() 的输出，对其 shuffle 与 chunk
+
+        :param state: [n, state_dimension]
+        :param agent_action: [n, 1]
+        :param reward: [n, 1]
+        :param term: [n, 1]
+        :param user_action: [n, 1]
+        :return:
+                 state: tuple, 其内每个元素形状为 [n, state_dimension]
+                 agent_action: tuple, 其内每个元素形状为 [n, 1]
+                 reward: tuple, 其内每个元素形状为 [n, 1]
+                 term: tuple, 其内每个元素形状为 [n, 1]
+                 user_action: tuple, 其内每个元素形状为 [n, 1]
+        """
+
+        data_size = len(state)
+        perm = torch.randperm(data_size)
+        state_shuf, agent_action_shuf, reward_shuf, term_shuf, user_action_shuf = state[perm], \
+                                                                                  agent_action[
+                                                                                      perm], reward[
+                                                                                      perm], term[
+                                                                                      perm], \
+                                                                                  user_action[perm]
+        optim_chunk_num = int(math.ceil(data_size * 1.0 / 64))
+        state_shuf = torch.chunk(state_shuf, optim_chunk_num)
+        agent_action_shuf = torch.chunk(agent_action_shuf, optim_chunk_num)
+        reward_shuf = torch.chunk(reward_shuf, optim_chunk_num)
+        term_shuf = torch.chunk(term_shuf, optim_chunk_num)
+        user_action_shuf = torch.chunk(user_action_shuf, optim_chunk_num)
+        return state_shuf, agent_action_shuf, reward_shuf, term_shuf, user_action_shuf
+
+    def train(self, epochs=30):
+        dataset = self._create_dataset()
+        data_size = len(dataset[0])
+        logging.debug('World Model: train on {} samples'.format(data_size))
 
         span = epochs // 5
         for epoch in range(epochs):
-            perm = torch.randperm(data_size)
-            state_shuf, agent_action_shuf, reward_shuf, term_shuf, user_action_shuf = state[perm], \
-                                                                                      agent_action[
-                                                                                          perm], \
-                                                                                      reward[perm], \
-                                                                                      term[perm], \
-                                                                                      user_action[
-                                                                                          perm]
-            optim_chunk_num = int(math.ceil(data_size * 1.0 / 64))
-            state_shuf = torch.chunk(state_shuf, optim_chunk_num)
-            agent_action_shuf = torch.chunk(agent_action_shuf, optim_chunk_num)
-            reward_shuf = torch.chunk(reward_shuf, optim_chunk_num)
-            term_shuf = torch.chunk(term_shuf, optim_chunk_num)
-            user_action_shuf = torch.chunk(user_action_shuf, optim_chunk_num)
-
             total_loss_r = 0.
             total_loss_t = 0.
             total_loss_u_a = 0.
-            for state_b, agent_action_b, reward_b, term_b, user_action_b in zip(state_shuf,
-                                                                                agent_action_shuf,
-                                                                                reward_shuf,
-                                                                                term_shuf,
-                                                                                user_action_shuf):
+            dataset_chunk = self._shuffle_and_chunk_dataset(*dataset)
+            optim_chunk_num = len(dataset_chunk[0])
+
+            for state_b, agent_action_b, reward_b, term_b, user_action_b in zip(*dataset_chunk):
                 self.optimizer.zero_grad()
                 reward_, term_, user_action_ = self.model(state_b, agent_action_b)
                 loss_r = F.mse_loss(reward_, reward_b)
                 loss_t = F.binary_cross_entropy_with_logits(term_, term_b)
-                loss_u_a = F.nll_loss(user_action_, user_action_b)
+                loss_u_a = F.nll_loss(user_action_, user_action_b.squeeze()) * 3.0
                 loss = loss_r + loss_t + loss_u_a
                 loss.backward()
                 self.optimizer.step()
@@ -202,9 +234,7 @@ class WorldModelSimulator(UserSimulator):
                 total_loss_u_a += loss_u_a.item() / optim_chunk_num
 
             if epoch % span == 0 or epoch == epochs - 1:
-                acc_reward, acc_term, acc_user_action = self.calculate_metrics(state, agent_action,
-                                                                               reward, term,
-                                                                               user_action)
+                acc_reward, acc_term, acc_user_action = self._calculate_metrics(*dataset)
 
                 logging.debug('Training World Model: iteration {}/{}'.format(epoch, epochs))
                 logging.debug(
@@ -214,17 +244,23 @@ class WorldModelSimulator(UserSimulator):
                 logging.debug(
                     '                      acc_reward {:.03f}, acc_term {:.03f}, acc_user_action {:.03f}'.format(
                         acc_reward, acc_term, acc_user_action))
-            # logging.debug('training World Model: iteration {}'.format(i))
-            # logging.debug('       acc_reward      {:.03f}, reward loss {}'.format(acc_reward, total_loss_r))
-            # logging.debug('       acc_term        {:.03f}, term loss {}'.format(acc_term, total_loss_t))
-            # logging.debug('       acc_user_action {:.03f}, user_action loss {}'.format(acc_user_action, total_loss_u_a))
 
-    def calculate_metrics(self, state, agent_action, reward, term, user_action):
+    def _calculate_metrics(self, state, agent_action, reward, term, user_action):
+        """
+        计算 world model 在数据上的准确度
+
+        :param state: [n, state_dimension]
+        :param agent_action: [n, 1]
+        :param reward: [n, 1]
+        :param term: [n, 1]
+        :param user_action: [n, 1]
+        :return: 三个准确度 acc_reward, acc_term, acc_user_action
+        """
         reward_pred, term_pred, user_action_pred = self.model.predict(state, agent_action)
         # for reward
         reward_pred_ = torch.full(reward_pred.shape, -0.1)
-        reward_pred_[reward_pred > 1] = 1
-        reward_pred_[reward_pred < -1] = -1
+        reward_pred_[reward_pred > self.reward_threshold] = 1
+        reward_pred_[reward_pred < -self.reward_threshold] = -1
         acc_reward = 1.0 * torch.sum(reward_pred_ == reward).item() / len(reward.view(-1))
         # for term
         term = term.int()
@@ -237,7 +273,7 @@ class WorldModelSimulator(UserSimulator):
 
     def save_experience(self, user_state, agent_action, reward, term, user_action):
         user_state_vec = self.prepare_state_representation(user_state)
-        goal_vec = self.prepare_user_goal_representation(self.sample_goal)
+        goal_vec = self._prepare_user_goal_representation(self.sample_goal)
         state_vec = np.hstack([user_state_vec, goal_vec]).squeeze()
         if reward > 1:
             reward = 1
@@ -271,7 +307,7 @@ class WorldModelSimulator(UserSimulator):
             return response_action, term, reward
 
         s = self.prepare_state_representation(s)
-        g = self.prepare_user_goal_representation(self.sample_goal)
+        g = self._prepare_user_goal_representation(self.sample_goal)
         s = np.hstack([s, g])
         reward, term, action = self.predict(torch.from_numpy(s).float().squeeze(),
                                             torch.from_numpy(np.asarray(a)))
@@ -292,9 +328,9 @@ class WorldModelSimulator(UserSimulator):
 
         term = term > 0.5
 
-        if reward > 1:
+        if reward > self.reward_threshold:
             reward = 2 * self.max_turn
-        elif reward < -1:
+        elif reward < -self.reward_threshold:
             reward = -self.max_turn
         else:
             reward = -1
@@ -455,7 +491,7 @@ class WorldModelMemory:
         return len(self.memory)
 
 
-class WorldModelNet(nn.Module):
+class WorldModeSingleNet(nn.Module):
     def __init__(self,
                  agent_action_size,
                  state_size,
@@ -463,7 +499,7 @@ class WorldModelNet(nn.Module):
                  reward_size=1,
                  termination_size=1,
                  hidden_size=60):
-        super(WorldModelNet, self).__init__()
+        super(WorldModeSingleNet, self).__init__()
 
         self.linear_i2h = nn.Linear(state_size, hidden_size)
         self.agent_emb = nn.Embedding(agent_action_size, hidden_size)
@@ -472,24 +508,207 @@ class WorldModelNet(nn.Module):
         self.linear_h2a = nn.Linear(hidden_size, user_action_size)
 
     def forward(self, s, a):
+        """
+
+        :param s: [n, state_size], float
+        :param a: [n, 1], int
+        :return:
+            reward: [n, 1], float
+            term: [n, 1], float
+            action: [n, user_action_size], float
+        """
         h_s = self.linear_i2h(s)
-        h_a = self.agent_emb(a).squeeze(1)
-        # h = F.tanh(h_s + h_a)
+        h_a = self.agent_emb(a).squeeze()
         h = torch.tanh(h_s + h_a)
 
         reward = self.linear_h2r(h)
         term = self.linear_h2t(h)
-        action = F.log_softmax(self.linear_h2a(h), 1)
-
+        action = F.log_softmax(self.linear_h2a(h), -1)
         return reward, term, action
 
     def predict(self, s, a):
+        """
+
+        :param s: [n, state_size], float
+        :param a: [n, 1], int
+        :return:
+            reward: [n, 1], float
+            term: [n, 1], float
+            action: [n, 1], int
+        """
         h_s = self.linear_i2h(s)
-        h_a = self.agent_emb(a)
+        h_a = self.agent_emb(a).squeeze()
         h = torch.tanh(h_s + h_a)
 
         reward = self.linear_h2r(h)
         term = torch.sigmoid(self.linear_h2t(h))
-        action = F.log_softmax(self.linear_h2a(h), -1)
+        action_weight = F.log_softmax(self.linear_h2a(h), -1)
 
-        return reward, term, action.argmax(-1)
+        action = action_weight.argmax(-1).unsqueeze(-1)
+        return reward, term, action
+
+
+class WorldModelMultiNet(nn.Module):
+    def __init__(self,
+                 agent_action_size,
+                 state_size,
+                 user_action_size,
+                 reward_size=1,
+                 termination_size=1,
+                 hidden_size=60):
+        super(WorldModelMultiNet, self).__init__()
+
+        self.reward_net = RewardNet(agent_action_size, state_size, reward_size, hidden_size)
+        self.term_net = TermNet(agent_action_size, state_size, termination_size, hidden_size)
+        self.action_net = ActionNet(agent_action_size, state_size, user_action_size, hidden_size)
+
+    def forward(self, s, a):
+        """
+
+        :param s: [n, state_size], float
+        :param a: [n, 1], int
+        :return:
+            reward: [n, 1], float
+            term: [n, 1], float
+            action: [n, user_action_size], float
+        """
+        reward = self.reward_net(s, a)
+        term = self.reward_net(s, a)
+        action = self.action_net(s, a)
+        return reward, term, action
+
+    def predict(self, s, a):
+        """
+
+        :param s: [n, state_size], float
+        :param a: [n, 1], int
+        :return:
+            reward: [n, 1], float
+            term: [n, 1], float
+            action: [n, 1], int
+        """
+        reward = self.reward_net.predict(s, a)
+        term = self.reward_net.predict(s, a)
+        action = self.action_net.predict(s, a)
+        return reward, term, action
+
+
+class RewardNet(nn.Module):
+    def __init__(self,
+                 agent_action_size,
+                 state_size,
+                 reward_size=1,
+                 hidden_size=60):
+        super(RewardNet, self).__init__()
+        self.fc_s2h = nn.Linear(state_size, hidden_size)
+        self.emb_u_a = nn.Embedding(agent_action_size, hidden_size)
+        self.fc_h2o = nn.Linear(hidden_size, reward_size)
+
+    def forward(self, s, a):
+        """
+
+        :param s: [n, state_size], float
+        :param a: [n, 1], int
+        :return:
+            reward: [n, 1], float
+        """
+        h_s = self.fc_s2h(s)
+        h_a = self.emb_u_a(a).squeeze()
+        h = torch.tanh(h_s + h_a)
+        reward = self.fc_h2o(h)
+        return reward
+
+    def predict(self, s, a):
+        """
+
+        :param s: [n, state_size], float
+        :param a: [n, 1], int
+        :return:
+            reward: [n, 1], float
+        """
+        h_s = self.fc_s2h(s)
+        h_a = self.emb_u_a(a).squeeze()
+        h = torch.tanh(h_s + h_a)
+        reward = self.fc_h2o(h)
+        return reward
+
+
+class TermNet(nn.Module):
+    def __init__(self,
+                 agent_action_size,
+                 state_size,
+                 termination_size=1,
+                 hidden_size=60):
+        super(TermNet, self).__init__()
+        self.fc_s2h = nn.Linear(state_size, hidden_size)
+        self.emb_u_a = nn.Embedding(agent_action_size, hidden_size)
+        self.fc_h2o = nn.Linear(hidden_size, termination_size)
+
+    def forward(self, s, a):
+        """
+
+        :param s: [n, state_size], float
+        :param a: [n, 1], int
+        :return:
+            term: [n, 1], float
+        """
+        h_s = self.fc_s2h(s)
+        h_a = self.emb_u_a(a).squeeze()
+        h = torch.tanh(h_s + h_a)
+        term = self.fc_h2o(h)
+        return term
+
+    def predict(self, s, a):
+        """
+
+        :param s: [n, state_size], float
+        :param a: [n, 1], int
+        :return:
+            term: [n, 1], float
+        """
+        h_s = self.fc_s2h(s)
+        h_a = self.emb_u_a(a).squeeze()
+        h = torch.tanh(h_s + h_a)
+        term = self.fc_h2o(h)
+        return term
+
+
+class ActionNet(nn.Module):
+    def __init__(self,
+                 agent_action_size,
+                 state_size,
+                 user_action_size,
+                 hidden_size=60):
+        super(ActionNet, self).__init__()
+        self.fc_s2h = nn.Linear(state_size, hidden_size)
+        self.emb_u_a = nn.Embedding(agent_action_size, hidden_size)
+        self.fc_h2o = nn.Linear(hidden_size, user_action_size)
+
+    def forward(self, s, a):
+        """
+
+        :param s: [n, state_size], float
+        :param a: [n, 1], int
+        :return:
+            action: [n, user_action_size], float
+        """
+        h_s = self.fc_s2h(s)
+        h_a = self.emb_u_a(a).squeeze()
+        h = torch.tanh(h_s + h_a)
+        action = self.fc_h2o(h)
+        return action
+
+    def predict(self, s, a):
+        """
+
+        :param s: [n, state_size], float
+        :param a: [n, 1], int
+        :return:
+            action: [n, 1], int
+        """
+        h_s = self.fc_s2h(s)
+        h_a = self.emb_u_a(a).squeeze()
+        h = torch.tanh(h_s + h_a)
+        action_weight = F.log_softmax(self.fc_h2o(h), -1)
+        action = action_weight.argmax(-1).unsqueeze(-1)
+        return action

@@ -26,6 +26,8 @@ class DialogManagerPPO:
         # 加入 world model
         self.world_model = world_model
 
+
+
     def initialize_episode(self):
         """ Refresh state for new dialog """
 
@@ -85,7 +87,8 @@ class DialogManagerPPO:
         if record_data_for_ppo:
             self.agent.save_experience(state, agent_action, self.reward, self.episode_over)
         if record_data_for_world_model:
-            self.world_model.save_experience(state_user, self.agent.action, self.reward, self.episode_over,
+            self.world_model.save_experience(state_user, self.agent.action, self.reward,
+                                             self.episode_over,
                                              self.user_action)
 
         return self.episode_over, self.reward
@@ -131,7 +134,8 @@ class DialogManagerPPO:
         # self.reward = self.reward_function(dialog_status)
         # user world model
         state_user = self.state_tracker.get_state_for_user()
-        self.user_action, self.episode_over, self.reward = self.world_model.next(state_user, self.agent.action)
+        self.user_action, self.episode_over, self.reward = self.world_model.next(state_user,
+                                                                                 self.agent.action)
 
         ########################################################################
         #   Update state tracker with latest user action
@@ -206,7 +210,8 @@ class DialogManagerPPO:
                 user_request_slots = user_action['request_slots']
                 if 'ticket' in user_request_slots.keys(): del user_request_slots['ticket']
                 if len(user_request_slots) > 0:
-                    possible_values = self.state_tracker.get_suggest_slots_values(user_action['request_slots'])
+                    possible_values = self.state_tracker.get_suggest_slots_values(
+                        user_action['request_slots'])
                     for slot in possible_values.keys():
                         if len(possible_values[slot]) > 0:
                             print('(Suggested Values: %s: %s)' % (slot, possible_values[slot]))
@@ -214,4 +219,5 @@ class DialogManagerPPO:
                             print('(Suggested Values: there is no available %s)' % (slot))
                 else:
                     kb_results = self.state_tracker.get_current_kb_results()
-                    print ('(Number of movies in KB satisfying current constraints: %s)' % len(kb_results))
+                    print ('(Number of movies in KB satisfying current constraints: %s)' % len(
+                        kb_results))

@@ -303,6 +303,7 @@ best_res['success_rate'] = 0
 
 performance_records = {}
 performance_records['success_rate'] = {}
+performance_records['success_rate_with_world_model'] = {}
 performance_records['ave_turns'] = {}
 performance_records['ave_reward'] = {}
 performance_records['dialog_number'] = {}
@@ -527,19 +528,19 @@ def run_episodes_with_world_model(episodes):
             print '\n\n'
             logging.debug('Current episode {}/{}'.format(episode, episodes))
             simulation_res = simulation_epoch(1024, record_data_for_ppo=True,
-                                              record_data_for_world_model=True,
-                                              use_user=True)
+                                              record_data_for_world_model=True, use_user=True)
             agent.train()
             world_model.train()
-            _simulation_res = simulation_epoch(1024, record_data_for_ppo=True,
-                                               record_data_for_world_model=False,
-                                               use_user=False)
+            _simulation_res = simulation_epoch(1024 * 2, record_data_for_ppo=True,
+                                               record_data_for_world_model=False, use_user=False)
             agent.train()
 
             performance_records['success_rate'][episode] = simulation_res['success_rate']
             performance_records['ave_turns'][episode] = simulation_res['ave_turns']
             performance_records['ave_reward'][episode] = simulation_res['ave_reward']
             performance_records['dialog_number'][episode] = simulation_res['dialog_number']
+
+            performance_records['success_rate_with_world_model'][episode] = _simulation_res['success_rate']
 
             # 更新最好的指标
             if simulation_res['success_rate'] > best_res['success_rate']:
@@ -575,8 +576,8 @@ def run_episodes_with_world_model(episodes):
 
 
 if params['algorithm'] == 'PPO':
-    run_episodes(200)
+    run_episodes(1)
 elif params['algorithm'] == 'DPPO':
-    run_episodes_with_world_model(200)
+    run_episodes_with_world_model(300)
 else:
     logging.error('No algorithm called {}'.format(params['algorithm']))
