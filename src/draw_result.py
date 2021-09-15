@@ -6,6 +6,8 @@ import json
 from matplotlib import pyplot
 import pandas as pd
 import seaborn as sns
+from deep_dialog.utils import SmoothValue
+from collections import OrderedDict
 
 
 def calculate_average_success_rate(result_dir, filename):
@@ -59,16 +61,31 @@ def read_to_data_frame(result_dir, algorithm, filename):
     sub_dir_list = os.listdir(result_dir)
     for sub_dir in sub_dir_list:  # 对每个子目录的文件
         # sub_dir_path = os.path.join(result_dir, sub_dir)
+        if sub_dir != 'run1':
+            continue
         file_path = os.path.join(result_dir, sub_dir, filename)
         with open(file_path, 'r') as f:
             result = json.load(f)  # 读取记录
             # 加入 data frame 中
+
+            # 读取 user suc
+            smooth = SmoothValue(5)
+            result['success_rate'] = OrderedDict(
+                sorted(result['success_rate'].items(), key=lambda (key, value): int(key)))
             for epoch, success_rate in result['success_rate'].items():
+                success_rate = smooth.smooth(success_rate)
                 df = df.append([{'algorithm': algorithm, 'run_num': sub_dir, 'epoch': int(epoch),
                                  'success_rate': success_rate, 'environment': 'user'}])
+
+            # 读取 world model suc
             if 'success_rate_with_world_model' not in result.keys():
                 continue
+            smooth = SmoothValue(5)
+            result['success_rate_with_world_model'] = OrderedDict(
+                sorted(result['success_rate_with_world_model'].items(),
+                       key=lambda (key, value): int(key)))
             for epoch, success_rate in result['success_rate_with_world_model'].items():
+                success_rate = smooth.smooth(success_rate)
                 df = df.append([{'algorithm': algorithm, 'run_num': sub_dir, 'epoch': int(epoch),
                                  'success_rate': success_rate, 'environment': 'world_model'}])
     return df
@@ -84,20 +101,28 @@ def draw_figure_from_data_frame(result_dirs, filename='performance.json'):
     df.sort_values(by='run_num', inplace=True)
 
     selected_df = df
-    # selected_df = selected_df[(selected_df['epoch'] < 100)]
+    # selected_df = selected_df[(selected_df['epoch'] < 70)]
     # selected_df = selected_df[(selected_df['environment'] == 'user')]
-    sns.relplot(x='epoch', y='success_rate', hue='environment', col='algorithm', data=selected_df,
+    sns.relplot(x='epoch', y='success_rate', hue='environment', row='algorithm',  data=selected_df,
                 kind='line')
+    # sns.relplot(x='epoch', y='success_rate', hue='algorithm', data=selected_df,
+    #             kind='line')
     pyplot.show()
     return df
 
 
 if __name__ == '__main__':
     # draw_figure_from_data_frame(
-    #     [{'dir': 'result/DPPO/DPPO_warm_1000_run_100_reward_0.5_WM_2_30_3000',
-    #       'algorithm': 'DPPO'}, ])
+    #     [{'dir': 'result/DPPO/DPPO_warm_1000_run_200_wm_2_singlenet_stop_l_0.1_rate_0.9',
+    #       'algorithm': 'reward_stop'},
+    #      {'dir': 'result/DPPO/DPPO_warm_1000_run_300_wm_2_singlenet',
+    #       'algorithm': 'reward'},
+    #      {'dir': 'result/DPPO/DPPO_warm_1000_run_200_wm_2',
+    #       'algorithm': 'original'},
+    #      {'dir': 'result/PPO/PPO_warm_1000_run_200',
+    #       'algorithm': 'PPO'}])
     draw_figure_from_data_frame(
-        [{'dir': 'result/DPPO/DPPO_warm_1000_run_100_reward_0.5_WM_2_30_3000',
-          'algorithm': 'WM_2_30_3000'},
-         {'dir': 'result/DPPO/DPPO_warm_1000_run_100_reward_threshold_0.5_WM_4_30_5000',
-          'algorithm': 'WM_4_30_5000'}])
+        [{'dir': 'result/DPPO/DPPO_warm_1000_run_200_wm_5_singlenet_stop_l_0.1_rate_0.9',
+          'algorithm': 'stop'},
+         {'dir': 'result/DPPO/DPPO_warm_1000_run_200_wm_5_singlenet',
+          'algorithm': 'not_stop'}])

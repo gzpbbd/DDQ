@@ -52,3 +52,18 @@ def calculate_time(func):
         return _result
 
     return wrapped_function
+
+
+class SmoothValue:
+    def __init__(self, smooth_length=10):
+        self.history = []
+        self.smooth_length = smooth_length
+
+    def smooth(self, value):
+        if self.smooth_length <= 0:
+            return value
+
+        self.history.append(value)
+        element_num = min(self.smooth_length, len(self.history))
+        value_ = sum(self.history[-self.smooth_length:]) / float(element_num)
+        return value_

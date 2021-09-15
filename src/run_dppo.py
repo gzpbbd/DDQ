@@ -15,7 +15,7 @@ from deep_dialog.dialog_system import text_to_dict, DialogManagerPPO
 from deep_dialog.agents import AgentCmd, InformAgent, RequestAllAgent, RandomAgent, EchoAgent, \
     RequestBasicsAgent, AgentPPO, PPOMemory
 from deep_dialog.usersims import RuleSimulator
-from deep_dialog.utils import init_logging, calculate_time
+from deep_dialog.utils import init_logging, calculate_time, SmoothValue
 from deep_dialog.usersims.world_model_ppo import WorldModelSimulator
 
 from deep_dialog import dialog_config
@@ -143,6 +143,8 @@ if __name__ == "__main__":
                         help='train/test/all; default is all')
     # ------------ 以上�? TC-Bot 自带的参�?------------
     parser.add_argument('--algorithm', default='PPO', type=str, help='PPO/DPPO; default is PPO')
+    parser.add_argument('--early_stop_world_model', default=False, type=bool,
+                        help='True/False')
 
     args = parser.parse_args()
     params = vars(args)  # 返回args的属性名与属性值构成的字典
@@ -507,10 +509,11 @@ def warm_ppo_and_world_model(episodes=1000):
 
 
 @calculate_time
-def run_episodes_with_world_model(episodes):
+def run_episodes_with_world_model(episodes, stop_l=10, stop_rate=0.9):
     '''
 
     :param episodes: number of episode
+    :param stop_l: 系数
     :return
     '''
 
@@ -523,24 +526,43 @@ def run_episodes_with_world_model(episodes):
 
     # 训练模型，记录结�?
     if agt == 9 and params['trained_model_path'] == None:
+        u_suc_smooth = SmoothValue(episodes // stop_l)
+        w_m_suc_smooth = SmoothValue(episodes // stop_l)
+        stop_world_model = False
         for episode in tqdm(xrange(episodes), desc=params['write_model_dir'].split('/')[-1],
                             mininterval=5):
             print '\n\n'
             logging.debug('Current episode {}/{}'.format(episode, episodes))
             simulation_res = simulation_epoch(1024, record_data_for_ppo=True,
-                                              record_data_for_world_model=True, use_user=True)
+                                              record_data_for_world_model=not stop_world_model,
+                                              use_user=True)
             agent.train()
-            world_model.train()
-            _simulation_res = simulation_epoch(1024 * 2, record_data_for_ppo=True,
-                                               record_data_for_world_model=False, use_user=False)
-            agent.train()
+            if not stop_world_model:
+                world_model.train()
+                _simulation_res = simulation_epoch(1024 * 5, record_data_for_ppo=True,
+                                                   record_data_for_world_model=False,
+                                                   use_user=False)
+                agent.train()
+
+                performance_records['success_rate_with_world_model'][episode] = _simulation_res[
+                    'success_rate']
 
             performance_records['success_rate'][episode] = simulation_res['success_rate']
             performance_records['ave_turns'][episode] = simulation_res['ave_turns']
             performance_records['ave_reward'][episode] = simulation_res['ave_reward']
             performance_records['dialog_number'][episode] = simulation_res['dialog_number']
 
-            performance_records['success_rate_with_world_model'][episode] = _simulation_res['success_rate']
+            # 及时停止使用 world model
+            if params['early_stop_world_model']:
+                u_suc = u_suc_smooth.smooth(simulation_res['success_rate'])
+                w_m_suc = w_m_suc_smooth.smooth(_simulation_res['success_rate'])
+                wm_u_rate = w_m_suc / max(u_suc, 1e-10)
+                logging.debug('Rate: world model success / user success = {:.3f}'.format(wm_u_rate))
+
+                if episode >= stop_l:
+                    if wm_u_rate < stop_rate:
+                        stop_world_model = True
+                        logging.debug('Stop using world model at episode {}'.format(episode + 1))
 
             # 更新最好的指标
             if simulation_res['success_rate'] > best_res['success_rate']:
@@ -576,8 +598,8 @@ def run_episodes_with_world_model(episodes):
 
 
 if params['algorithm'] == 'PPO':
-    run_episodes(1)
+    run_episodes(300)
 elif params['algorithm'] == 'DPPO':
-    run_episodes_with_world_model(300)
+    run_episodes_with_world_model(200)
 else:
     logging.error('No algorithm called {}'.format(params['algorithm']))
