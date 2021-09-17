@@ -1,4 +1,6 @@
 # encoding:utf-8
+import os.path
+
 from .usersim import UserSimulator
 import argparse, json, random, copy, sys
 import numpy as np
@@ -14,6 +16,7 @@ import time
 import config
 from torch import nn
 import math
+import pickle
 
 WorldModelTransition = namedtuple('Transition',
                                   ('state', 'agent_action', 'reward', 'term', 'user_action'))
@@ -57,8 +60,12 @@ class WorldModelSimulator(UserSimulator):
         self.learning_phase = params['learning_phase']
 
         # SimulatorModel 模型结构对应了论�? world model 的描�?
-        self.model = WorldModeSingleNet(self.num_actions_sys, self.state_dimension,
-                                        self.num_actions_user, 1)
+        if params['world_model_net_type'] == 'attention_r':
+            self.model = WorldModeSingleNetAttention(self.num_actions_sys, self.state_dimension,
+                                                     self.num_actions_user, 1)
+        else:
+            self.model = WorldModeSingleNet(self.num_actions_sys, self.state_dimension,
+                                            self.num_actions_user, 1)
         self.optimizer = optim.RMSprop(self.model.parameters(), lr=0.001)
         # 关于DPPO
         self.memory = WorldModelMemory()
@@ -206,12 +213,14 @@ class WorldModelSimulator(UserSimulator):
         user_action_shuf = torch.chunk(user_action_shuf, optim_chunk_num)
         return state_shuf, agent_action_shuf, reward_shuf, term_shuf, user_action_shuf
 
-    def train(self, epochs=30):
-        dataset = self._create_dataset()
+    def train(self, epochs=100, dataset=None):
+        if not dataset:
+            dataset = self._create_dataset()
         data_size = len(dataset[0])
         logging.debug('World Model: train on {} samples'.format(data_size))
 
         span = epochs // 5
+        acc_reward, acc_term, acc_user_action = 0., 0., 0.
         for epoch in range(epochs):
             total_loss_r = 0.
             total_loss_t = 0.
@@ -235,7 +244,6 @@ class WorldModelSimulator(UserSimulator):
 
             if epoch % span == 0 or epoch == epochs - 1:
                 acc_reward, acc_term, acc_user_action = self._calculate_metrics(*dataset)
-
                 logging.debug('Training World Model: iteration {}/{}'.format(epoch, epochs))
                 logging.debug(
                     '                      loss: reward {:.05f}, term {:.05f}, user action {:.05f}'.format(
@@ -244,6 +252,8 @@ class WorldModelSimulator(UserSimulator):
                 logging.debug(
                     '                      acc_reward {:.03f}, acc_term {:.03f}, acc_user_action {:.03f}'.format(
                         acc_reward, acc_term, acc_user_action))
+
+        return acc_reward, acc_term, acc_user_action
 
     def _calculate_metrics(self, state, agent_action, reward, term, user_action):
         """
@@ -309,11 +319,7 @@ class WorldModelSimulator(UserSimulator):
         s = self.prepare_state_representation(s)
         g = self._prepare_user_goal_representation(self.sample_goal)
         s = np.hstack([s, g])
-        reward, term, action = self.predict(torch.from_numpy(s).float().squeeze(),
-                                            torch.from_numpy(np.asarray(a)))
-        action = action.item()
-        reward = reward.item()
-        term = term.item()
+        reward, term, action = self.predict(s, a)
         action = copy.deepcopy(self.feasible_actions_users[action])
 
         if action['diaact'] == 'inform':
@@ -334,11 +340,17 @@ class WorldModelSimulator(UserSimulator):
             reward = -self.max_turn
         else:
             reward = -1
-
+        # if reward != -1 or term:
+        #     logging.debug('Reward {} Term {}'.format(reward, term))
+        #     if reward > 0 and term:
+        #         logging.debug('Success')
         return response_action, term, reward
 
     def predict(self, s, a):
-        return self.model.predict(s, a)
+        s_ = torch.from_numpy(s).float()
+        a_ = torch.tensor([a, ]).unsqueeze(dim=0)
+        reward, term, action = self.model.predict(s_, a_)
+        return reward.item(), term.item(), action.item()
 
     def register_user_goal(self, goal):
         self.user_goal = goal
@@ -461,6 +473,18 @@ class WorldModelSimulator(UserSimulator):
              kb_count_rep])
         return self.final_representation
 
+    def dump_memory_dataset(self, dir_name, filename='world_model_memory.pt'):
+        file_path = os.path.join(dir_name, filename)
+        dataset = self._create_dataset()
+        torch.save(dataset, file_path)
+        logging.debug('Save World Model memory to {}'.format(os.path.abspath(file_path)))
+
+    def load_memory_dataset(self, dir_name, filename='world_model_memory.pt'):
+        file_path = os.path.join(dir_name, filename)
+        dataset = torch.load(file_path)
+        logging.debug('Load World Model memory from {}'.format(os.path.abspath(file_path)))
+        return dataset
+
 
 class WorldModelMemory:
     def __init__(self):
@@ -498,7 +522,7 @@ class WorldModeSingleNet(nn.Module):
                  user_action_size,
                  reward_size=1,
                  termination_size=1,
-                 hidden_size=60):
+                 hidden_size=64):
         super(WorldModeSingleNet, self).__init__()
 
         self.linear_i2h = nn.Linear(state_size, hidden_size)
@@ -506,6 +530,7 @@ class WorldModeSingleNet(nn.Module):
         self.linear_h2r = nn.Linear(hidden_size, reward_size)
         self.linear_h2t = nn.Linear(hidden_size, termination_size)
         self.linear_h2a = nn.Linear(hidden_size, user_action_size)
+        logging.debug('World Model net: WorldModeSingleNet')
 
     def forward(self, s, a):
         """
@@ -546,6 +571,100 @@ class WorldModeSingleNet(nn.Module):
 
         action = action_weight.argmax(-1).unsqueeze(-1)
         return reward, term, action
+
+
+class WorldModeSingleNetAttention(nn.Module):
+    def __init__(self,
+                 agent_action_size,
+                 state_size,
+                 user_action_size,
+                 reward_size=1,
+                 termination_size=1,
+                 hidden_size=64):
+        super(WorldModeSingleNetAttention, self).__init__()
+
+        self.linear_i2h = nn.Linear(state_size, hidden_size)
+        self.agent_emb = nn.Embedding(agent_action_size, hidden_size)
+
+        assert int(hidden_size ** 0.5) ** 2 == hidden_size
+        self.attention_dim = int(hidden_size ** 0.5)
+        self.attention_r = DotProductAttentionLayer(self.attention_dim, self.attention_dim)
+        # self.attention_a = DotProductAttentionLayer(self.attention_dim, self.attention_dim)
+        self.linear_h2r = nn.Linear(hidden_size, reward_size)
+
+        self.linear_h2t = nn.Linear(hidden_size, termination_size)
+
+        self.linear_h2a = nn.Linear(hidden_size, user_action_size)
+        logging.debug('World Model net: WorldModeSingleNetAttention')
+
+    def forward(self, s, a):
+        """
+
+        :param s: [n, state_size], float
+        :param a: [n, 1], int
+        :return:
+            reward: [n, 1], float
+            term: [n, 1], float
+            action: [n, user_action_size], float
+        """
+        h_s = self.linear_i2h(s)
+        h_a = self.agent_emb(a).squeeze()
+        h = torch.tanh(h_s + h_a)
+        # h_r = torch.tanh(torch.cat([h_s.unsqueeze(1), h_a.unsqueeze(1)], dim=1))
+        h_ = h.view(h.shape[0], self.attention_dim, self.attention_dim)
+
+        attention_r_output = self.attention_r(h_).view(h.shape[0], h.shape[1])
+        reward = self.linear_h2r(attention_r_output)
+        term = self.linear_h2t(h)
+
+        # attention_a_output = self.attention_a(h_).view(h.shape[0], h.shape[1])
+        action = F.log_softmax(self.linear_h2a(h), -1)
+        return reward, term, action
+
+    def predict(self, s, a):
+        """
+
+        :param s: [n, state_size], float
+        :param a: [n, 1], int
+        :return:
+            reward: [n, 1], float
+            term: [n, 1], float
+            action: [n, 1], int
+        """
+
+        # h_s = self.linear_i2h(s)
+        # h_a = self.agent_emb(a).squeeze()
+        # h = torch.tanh(h_s + h_a)
+        # h_ = h.view(h.shape[0], self.attention_dim, self.attention_dim)
+        #
+        # attention_r_output = self.attention_r(h_).view(h.shape[0], h.shape[1])
+        # reward = self.linear_h2r(attention_r_output)
+        # # reward = self.linear_h2r(h)
+        # term = self.linear_h2t(h)
+        #
+        # attention_a_output = self.attention_a(h_).view(h.shape[0], h.shape[1])
+        # action_weight = F.log_softmax(self.linear_h2a(attention_a_output), -1)
+
+        reward, term, action_weight = self.forward(s, a)
+        action = action_weight.argmax(-1).unsqueeze(-1)
+        return reward, term, action
+
+
+class DotProductAttentionLayer(nn.Module):
+    def __init__(self, in_features, out_features):
+        super(DotProductAttentionLayer, self).__init__()
+        self.wq = nn.Linear(in_features, out_features)
+        self.wk = nn.Linear(in_features, out_features)
+        self.wv = nn.Linear(in_features, out_features)
+        self.dk = out_features
+
+    def forward(self, input):
+        q = self.wq(input)
+        k = self.wk(input)
+        v = self.wv(input)
+        q_w = torch.matmul(q, k.transpose(-1, -2)) / (self.dk ** 0.5)
+        output = torch.matmul(torch.softmax(q_w, dim=-1), v)
+        return output
 
 
 class WorldModelMultiNet(nn.Module):
