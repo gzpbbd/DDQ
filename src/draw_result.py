@@ -3,11 +3,16 @@
 import os
 import argparse
 import json
+
+import logging
 from matplotlib import pyplot
 import pandas as pd
 import seaborn as sns
-from deep_dialog.utils import SmoothValue
+from deep_dialog.utils import SmoothValue, calculate_time
 from collections import OrderedDict
+
+logging.getLogger().setLevel(logging.DEBUG)
+pyplot.figure(dpi=1000)
 
 
 def calculate_average_success_rate(result_dir, filename):
@@ -56,13 +61,11 @@ def draw_figures(dirs):
     pyplot.show()
 
 
+@calculate_time
 def read_to_data_frame(result_dir, algorithm, filename):
     df = pd.DataFrame(columns=['algorithm', 'run_num', 'epoch', 'success_rate', 'environment'])
     sub_dir_list = os.listdir(result_dir)
     for sub_dir in sub_dir_list:  # 对每个子目录的文件
-        # sub_dir_path = os.path.join(result_dir, sub_dir)
-        if sub_dir != 'run1':
-            continue
         file_path = os.path.join(result_dir, sub_dir, filename)
         with open(file_path, 'r') as f:
             result = json.load(f)  # 读取记录
@@ -91,9 +94,11 @@ def read_to_data_frame(result_dir, algorithm, filename):
     return df
 
 
+@calculate_time
 def draw_figure_from_data_frame(result_dirs, filename='performance.json'):
     all_df = []
     for dir in result_dirs:
+        print 'Read data from {}'.format(os.path.abspath(dir['dir']))
         result_df = read_to_data_frame(dir['dir'], dir['algorithm'], filename)
         all_df.append(result_df)
         print len(result_df)
@@ -101,10 +106,23 @@ def draw_figure_from_data_frame(result_dirs, filename='performance.json'):
     df.sort_values(by='run_num', inplace=True)
 
     selected_df = df
-    # selected_df = selected_df[(selected_df['epoch'] < 70)]
+    # 筛选
+    # selected_df = selected_df[(selected_df['epoch'] < 150)]
     # selected_df = selected_df[(selected_df['environment'] == 'user')]
-    sns.relplot(x='epoch', y='success_rate', hue='environment', row='algorithm',  data=selected_df,
-                kind='line')
+    # 合并 environment 与 algorithm
+    # dppo_df = df[df['algorithm'].str.startswith('DPPO')]
+    # ppo_df = df[df['algorithm'].str.startswith('PPO')]
+
+    # dppo_df['algorithm_environment'] = dppo_df['algorithm'] + '_' + dppo_df['environment']
+    # ppo_df['algorithm_environment'] = ppo_df['algorithm']
+    # selected_df = pd.concat([dppo_df, ppo_df])
+    # sns.relplot(x='epoch', y='success_rate', hue='algorithm_environment',
+    #             data=selected_df, kind='line')
+
+    sns.relplot(x='epoch', y='success_rate', hue='algorithm', col='environment',
+                data=selected_df, kind='line')
+    # sns.relplot(x='epoch', y='success_rate', hue='algorithm',
+    #             data=selected_df, kind='line')
     # sns.relplot(x='epoch', y='success_rate', hue='algorithm', data=selected_df,
     #             kind='line')
     pyplot.show()
@@ -121,8 +139,36 @@ if __name__ == '__main__':
     #       'algorithm': 'original'},
     #      {'dir': 'result/PPO/PPO_warm_1000_run_200',
     #       'algorithm': 'PPO'}])
-    draw_figure_from_data_frame(
-        [{'dir': 'result/DPPO/DPPO_warm_1000_run_200_wm_5_singlenet_stop_l_0.1_rate_0.9',
-          'algorithm': 'stop'},
-         {'dir': 'result/DPPO/DPPO_warm_1000_run_200_wm_5_singlenet',
-          'algorithm': 'not_stop'}])
+
+    ppo_vs_ddq = [{'dir': 'result/dqn_p0_epoch1500',
+                   'algorithm': 'DQN'},
+                  {'dir': 'baseline/baseline_dqn_k5_5_agent_800_epoches',
+                   'algorithm': 'DQN-5'},
+                  {'dir': 'baseline/baseline_ddq_k5_5_agent_800_epoches',
+                   'algorithm': 'DDQ-K5'},
+                  {'dir': 'result/PPO/PPO_warm_1000_run_500_simulate_1024',
+                   'algorithm': 'PPO'},
+                  ]
+    dppo_user_vs_world_model = [
+        {'dir': 'result/DPPO/DPPO_warm_1000_run_200_wm_5_singlenet',
+         'algorithm': 'DPPO-K5'},
+        {'dir': 'result/PPO/PPO_warm_1000_run_500_simulate_1024',
+         'algorithm': 'PPO'},
+    ]
+    dppo_early_stop = [{'dir': 'result/PPO/PPO_warm_1000_run_500_simulate_1024',
+                        'algorithm': 'PPO'},
+                       # {'dir': 'result/DPPO/DPPO_warm_1000_run_200_wm_5_singlenet',
+                       #  'algorithm': 'DPPO-K5'},
+                       {
+                           'dir': 'result/DPPO/DPPO_warm_1000_run_200_wm_5_singlenet_stop_l_0.1_rate_0.9',
+                           'algorithm': 'DPPO-K5-early-stop'},
+                       ]
+
+    test_world_model_net = [{'dir': 'result/DPPO/DPPO_run_40_wmnet_e100_plan_1_attention_layer_dropout',
+                             'algorithm': 'attention_layer_dropout'},
+                            # {'dir': 'result/DPPO/DPPO_warm_1000_run_200_wm_5_singlenet',
+                            #  'algorithm': 'DPPO-K5'},
+                            {
+                                'dir': 'result/DPPO/DPPO_run_100_wmnet_original_e100_plan_1_again',
+                                'algorithm': 'original'}, ]
+    draw_figure_from_data_frame(test_world_model_net)

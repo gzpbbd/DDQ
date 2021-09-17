@@ -8,6 +8,8 @@ This should be a simple minimalist run file. It's only responsibility should be 
 """
 
 import argparse, json, copy, os
+import numpy as np
+
 import cPickle as pickle
 import cPickle
 
@@ -23,6 +25,7 @@ from deep_dialog.dialog_config import *
 
 from deep_dialog.nlu import nlu
 from deep_dialog.nlg import nlg
+import pandas as pd
 
 import numpy
 import random
@@ -70,8 +73,6 @@ if __name__ == "__main__":
 
     parser.add_argument('--max_turn', dest='max_turn', default=40, type=int,
                         help='maximum length of each dialog (default=20, 0=no maximum length)')
-    parser.add_argument('--episodes', dest='episodes', default=1, type=int,
-                        help='Total number of episodes to run (default=1)')
     parser.add_argument('--slot_err_prob', dest='slot_err_prob', default=0.00, type=float,
                         help='the slot err probability')
     parser.add_argument('--slot_err_mode', dest='slot_err_mode', default=0, type=int,
@@ -121,8 +122,6 @@ if __name__ == "__main__":
     # 0�? 不预训练 world model�? 1: �? user 交互，预训练 world model�?
     parser.add_argument('--warm_start', dest='warm_start', type=int, default=1,
                         help='0: no warm start; 1: warm start for training')
-    parser.add_argument('--warm_start_epochs', dest='warm_start_epochs', type=int, default=100,
-                        help='the number of epochs for warm start')
     parser.add_argument('--trained_model_path', dest='trained_model_path', type=str, default=None,
                         help='the path for trained model')  # 如果已有模型，则不进行训练。如果没有模型，则进行训�?
     parser.add_argument('-o', '--write_model_dir', dest='write_model_dir', type=str,
@@ -142,9 +141,23 @@ if __name__ == "__main__":
     parser.add_argument('--learning_phase', dest='learning_phase', default='all', type=str,
                         help='train/test/all; default is all')
     # ------------ 以上�? TC-Bot 自带的参�?------------
+    parser.add_argument('--warm_episodes', default=1000, type=int,
+                        help='Total number of episodes to run when warm algorithm')
+    parser.add_argument('--episodes', dest='episodes', default=1, type=int,
+                        help='Total number of episodes to run (default=1)')
+    parser.add_argument('--per_episode_time_steps', default=1024, type=int,
+                        help='how much time steps per simulation_epoch run to collect data')
+
     parser.add_argument('--algorithm', default='PPO', type=str, help='PPO/DPPO; default is PPO')
+    parser.add_argument('--plan_k', default=1, type=int,
+                        help='how times world model run')
     parser.add_argument('--early_stop_world_model', default=False, type=bool,
                         help='True/False')
+
+    parser.add_argument('--world_model_net_type', default='original', type=str,
+                        help='original/attention_r')
+    parser.add_argument('--world_model_train_epochs', default='30', type=int,
+                        help='how many times run world_model on dataset when training')
 
     args = parser.parse_args()
     params = vars(args)  # 返回args的属性名与属性值构成的字典
@@ -154,7 +167,6 @@ logging.debug('Dialog Parameters: ')
 logging.debug(json.dumps(params, indent=4))
 
 max_turn = params['max_turn']
-num_episodes = params['episodes']
 
 agt = params['agt']
 usr = params['usr']
@@ -243,6 +255,7 @@ usersim_params['intent_err_probability'] = params['intent_err_prob']
 usersim_params['simulator_run_mode'] = params['run_mode']
 usersim_params['simulator_act_level'] = params['act_level']
 usersim_params['learning_phase'] = params['learning_phase']
+usersim_params['world_model_net_type'] = params['world_model_net_type']
 
 if usr == 0:  # real user
     pass
@@ -292,7 +305,6 @@ dialog_manager = DialogManagerPPO(agent, user_sim, act_set, slot_set, movie_kb, 
 simulation_epoch_size = params['simulation_epoch_size']
 batch_size = params['batch_size']  # default = 16
 warm_start = params['warm_start']
-warm_start_epochs = params['warm_start_epochs']
 
 success_rate_threshold = params['success_rate_threshold']
 save_check_point = params['save_check_point']
@@ -430,7 +442,7 @@ def run_episodes(episodes):
     if agt == 9 and params['trained_model_path'] == None and warm_start == 1:
         logging.info('Running warm_start')
         # 设置 agent.warm_start = 2，所以之�? agent 是否保存经验只由 agent.predict_mode 控制
-        warm_ppo(1000)
+        warm_ppo(params['warm_episodes'])
         logging.info('warm_start finished, start RL training ...')
 
     # 训练模型，记录结�?
@@ -440,7 +452,8 @@ def run_episodes(episodes):
             print '\n\n'
             logging.debug('current episode {}/{}'.format(episode, episodes))
             # agent.predict_mode = True
-            simulation_res = simulation_epoch(1024, record_data_for_ppo=True)
+            simulation_res = simulation_epoch(params['per_episode_time_steps'],
+                                              record_data_for_ppo=True)
             # agent.predict_mode = False
             agent.train()
 
@@ -504,7 +517,7 @@ def warm_ppo_and_world_model(episodes=1000):
         'Warm phrase: ppo memory {}, world model memory {}'.format(len(agent.ppo.memory),
                                                                    len(world_model.memory)))
     agent.imitate()
-    world_model.train()
+    world_model.train(params['world_model_train_epochs'])
     agent.use_rule = False
 
 
@@ -516,15 +529,15 @@ def run_episodes_with_world_model(episodes, stop_l=10, stop_rate=0.9):
     :param stop_l: 系数
     :return
     '''
-
+    wm_train_res = pd.DataFrame(columns=['epoch', 'acc_reward', 'acc_term', 'acc_user_action'])
     # 最初时，world_model �? agent �? predict_mode == True
     if agt == 9 and params['trained_model_path'] == None and warm_start == 1:
         logging.info('warm_start starting ...')
         # 设置 agent.warm_start = 2，所以之�? agent 是否保存经验只由 agent.predict_mode 控制
-        warm_ppo_and_world_model(1000)
+        warm_ppo_and_world_model(params['warm_episodes'])
         logging.info('warm_start finished, start RL training ...')
 
-    # 训练模型，记录结�?
+    # 训练模型，记录结果
     if agt == 9 and params['trained_model_path'] == None:
         u_suc_smooth = SmoothValue(episodes // stop_l)
         w_m_suc_smooth = SmoothValue(episodes // stop_l)
@@ -533,14 +546,20 @@ def run_episodes_with_world_model(episodes, stop_l=10, stop_rate=0.9):
                             mininterval=5):
             print '\n\n'
             logging.debug('Current episode {}/{}'.format(episode, episodes))
-            simulation_res = simulation_epoch(1024, record_data_for_ppo=True,
+            simulation_res = simulation_epoch(params['per_episode_time_steps'],
+                                              record_data_for_ppo=True,
                                               record_data_for_world_model=not stop_world_model,
                                               use_user=True)
             agent.train()
             if not stop_world_model:
-                world_model.train()
-                _simulation_res = simulation_epoch(1024 * 5, record_data_for_ppo=True,
-                                                   record_data_for_world_model=False,
+                acc_reward, acc_term, acc_user_action = world_model.train(
+                    params['world_model_train_epochs'])
+                wm_train_res = wm_train_res.append(
+                    {'epoch': episode, 'acc_reward': acc_reward, 'acc_term': acc_term,
+                     'acc_user_action': acc_user_action}, ignore_index=True)
+
+                _simulation_res = simulation_epoch(params['per_episode_time_steps'] * params[
+                    'plan_k'], record_data_for_ppo=True, record_data_for_world_model=False,
                                                    use_user=False)
                 agent.train()
 
@@ -559,7 +578,7 @@ def run_episodes_with_world_model(episodes, stop_l=10, stop_rate=0.9):
                 wm_u_rate = w_m_suc / max(u_suc, 1e-10)
                 logging.debug('Rate: world model success / user success = {:.3f}'.format(wm_u_rate))
 
-                if episode >= stop_l:
+                if episode * stop_l >= episodes:
                     if wm_u_rate < stop_rate:
                         stop_world_model = True
                         logging.debug('Stop using world model at episode {}'.format(episode + 1))
@@ -590,16 +609,21 @@ def run_episodes_with_world_model(episodes, stop_l=10, stop_rate=0.9):
                                          'performance_epoch{}.json'.format(episode),
                                          performance_records)
 
-        # 最后结�?
+        # 最后结果
         filepath = os.path.join(params['write_model_dir'], 'best_ppo.pkl')
         agent.save(filepath)
         save_performance_records(params['write_model_dir'], 'performance.json',
                                  performance_records)
+        # 保存 world model 训练结果
+        csv_path = os.path.join(params['write_model_dir'], 'world_model_train_result.csv')
+        wm_train_res['epoch'] = wm_train_res['epoch'].astype(int)
+        wm_train_res.to_csv(csv_path, index=False)
+        logging.debug('Save World Model train records to {}'.format(os.path.abspath(csv_path)))
 
 
 if params['algorithm'] == 'PPO':
-    run_episodes(300)
+    run_episodes(params['episodes'])
 elif params['algorithm'] == 'DPPO':
-    run_episodes_with_world_model(200)
+    run_episodes_with_world_model(params['episodes'])
 else:
     logging.error('No algorithm called {}'.format(params['algorithm']))

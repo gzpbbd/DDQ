@@ -67,3 +67,4 @@ class SmoothValue:
         element_num = min(self.smooth_length, len(self.history))
         value_ = sum(self.history[-self.smooth_length:]) / float(element_num)
         return value_
+
