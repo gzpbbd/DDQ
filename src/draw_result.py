@@ -110,17 +110,17 @@ def draw_figure_from_data_frame(result_dirs, filename='performance.json'):
     # selected_df = selected_df[(selected_df['epoch'] < 150)]
     # selected_df = selected_df[(selected_df['environment'] == 'user')]
     # 合并 environment 与 algorithm
-    # dppo_df = df[df['algorithm'].str.startswith('DPPO')]
-    # ppo_df = df[df['algorithm'].str.startswith('PPO')]
+    dppo_df = df[df['algorithm'].str.startswith('DPPO')]
+    ppo_df = df[df['algorithm'].str.startswith('PPO')]
 
-    # dppo_df['algorithm_environment'] = dppo_df['algorithm'] + '_' + dppo_df['environment']
-    # ppo_df['algorithm_environment'] = ppo_df['algorithm']
-    # selected_df = pd.concat([dppo_df, ppo_df])
-    # sns.relplot(x='epoch', y='success_rate', hue='algorithm_environment',
-    #             data=selected_df, kind='line')
-
-    sns.relplot(x='epoch', y='success_rate', hue='algorithm', col='environment',
+    dppo_df['algorithm_environment'] = dppo_df['algorithm'] + '_' + dppo_df['environment']
+    ppo_df['algorithm_environment'] = ppo_df['algorithm']
+    selected_df = pd.concat([dppo_df, ppo_df])
+    sns.relplot(x='epoch', y='success_rate', hue='algorithm_environment',
                 data=selected_df, kind='line')
+
+    # sns.relplot(x='epoch', y='success_rate', hue='algorithm', col='environment',
+    #             data=selected_df, kind='line')
     # sns.relplot(x='epoch', y='success_rate', hue='algorithm',
     #             data=selected_df, kind='line')
     # sns.relplot(x='epoch', y='success_rate', hue='algorithm', data=selected_df,
@@ -164,11 +164,18 @@ if __name__ == '__main__':
                            'algorithm': 'DPPO-K5-early-stop'},
                        ]
 
-    test_world_model_net = [{'dir': 'result/DPPO/DPPO_run_40_wmnet_e100_plan_1_attention_layer_dropout',
-                             'algorithm': 'attention_layer_dropout'},
-                            # {'dir': 'result/DPPO/DPPO_warm_1000_run_200_wm_5_singlenet',
-                            #  'algorithm': 'DPPO-K5'},
-                            {
-                                'dir': 'result/DPPO/DPPO_run_100_wmnet_original_e100_plan_1_again',
-                                'algorithm': 'original'}, ]
-    draw_figure_from_data_frame(test_world_model_net)
+    test = [{
+        'dir': 'result/DPPO/DPPO_warm_1000_run_300_simulate_1024_plan_5_stop_l_10_rate_0.9_correct',
+        'algorithm': 'DPPO-K5-early-stop-correct'},
+        # {'dir': 'result/DPPO/DPPO_warm_1000_run_200_wm_5_singlenet',
+        #  'algorithm': 'DPPO-K5'},
+        # {'dir': 'result/PPO/PPO_warm_1000_run_500_simulate_1024',
+        #  'algorithm': 'PPO'},
+        {
+            'dir': 'result/DPPO/DPPO_warm_1000_run_200_wm_5_singlenet_stop_l_0.1_rate_0.9',
+            'algorithm': 'DPPO-K5-early-stop'},
+        # {
+        #     'dir': 'result/PPO/PPO_warm_1000_run_500_simulate_6144',
+        #     'algorithm': 'PPO-6'},
+    ]
+    draw_figure_from_data_frame(test)
